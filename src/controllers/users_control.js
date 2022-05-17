@@ -1,6 +1,7 @@
 const jwt = require('jsonwebtoken');
 const db = require('../../config/database');
 var bcrypt = require('bcrypt');
+const {secret} = require('../../config/config');
 
 //funcion interna para validar un curp
 function validarCurp(curp) {
@@ -80,13 +81,16 @@ export const login = async (req, res) => {
     if(result.length > 0){
         //validar que la contraseña sea correcta
         if(bcrypt.compareSync(Password, result[0].Password)){
-            //crear session
-            req.session.user = result[0].username;
-            req.session.loggedIn = true;
-            res.json({code: 200, message: 'Usuario autenticado'}).status(200);
-        }else{
-            //contraseña incorrecta
-            res.status(400).json({code: 400, message: 'Contraseña incorrecta'});
+            //generar token
+            const token = jwt.sign({
+                Username: result[0].Username,
+                Socio_id: result[0].Socio_id
+            }, secret);
+
+            //mandando token por el header
+            res.status(200)
+                .header('Authorization', token)
+                .json({ code: 200, message: 'Usuario autenticado'})
         }
     }
     else{
