@@ -1,11 +1,17 @@
 import express from "express";
 import userRoutes from './routes/users_routes'
-const cors = require('../middelware/cors');
+const cors = require('cors');
+const morgan = require("morgan");
+
 const app = express();
 
-app.use(cors);
+// Middlewares
+app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({extended: true}));
+app.use(morgan('dev'));
+
+// Routes
 app.use(userRoutes)
 
 export default app
