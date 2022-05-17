@@ -29,15 +29,15 @@ export const register = async (req, res) => {
         return res.status(400).json({ code: 410, message: 'El usuario ya existe' });
     }
 
+    //comprobar que el curp sea valido
+    if(!validarCurp(CURP)){
+        return res.status(400).json({ code: 412, message: 'El curp no es valido' });
+    }
     //comprobar que el curp sea unico
     query = "SELECT * FROM socios WHERE CURP = ?";
     const curpsIguales = await db.query(query, [CURP]);
     if(curpsIguales.length > 0){
         return res.status(400).json({ code: 411, message: 'El curp ya existe' });
-    }
-    //comprobar que el curp sea valido
-    else if(!validarCurp(CURP)){
-        return res.status(400).json({ code: 412, message: 'El curp no es valido' });
     }
 
     //comprobar que los campos esten completos
