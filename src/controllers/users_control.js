@@ -26,18 +26,18 @@ export const register = async (req, res) => {
     let query = "SELECT * FROM socios WHERE Username = ?";
     const rows = await db.query(query, [Username]);
     if(rows.length > 0){
-        return res.status(400).json({ code: 410, message: 'El usuario ya existe' });
+        return res.status(400).json({ code: 400, message: 'El usuario ya existe' });
     }
 
     //comprobar que el curp sea valido
     if(!validarCurp(CURP)){
-        return res.status(400).json({ code: 412, message: 'El curp no es valido' });
+        return res.status(400).json({ code: 400, message: 'El curp no es valido' });
     }
     //comprobar que el curp sea unico
     query = "SELECT * FROM socios WHERE CURP = ?";
     const curpsIguales = await db.query(query, [CURP]);
     if(curpsIguales.length > 0){
-        return res.status(400).json({ code: 411, message: 'El curp ya existe' });
+        return res.status(400).json({ code: 400, message: 'El curp ya existe' });
     }
 
     //comprobar que los campos esten completos
@@ -61,18 +61,41 @@ export const register = async (req, res) => {
         
     }else{
         //campos incompletos
-        res.status(400).json({code: 413, message: 'Campos incompletos'});
+        res.status(400).json({code: 400, message: 'Campos incompletos'});
+    }
+
+    ///codigos de respuesta . . .
+    //200: usuario autenticado
+    //400: error del usuario
+    //500: error del servidor
+}
+
+//funcion para login
+export const login = async (req, res) => {
+    const { Username, Password } = req.body;
+    let query = "SELECT * FROM socios WHERE Username = ?";
+    let result = await db.query(query, [Username]);
+    
+    //validar que existe el usuario
+    if(result.length > 0){
+        //validar que la contraseña sea correcta
+        if(bcrypt.compareSync(Password, result[0].Password)){
+            //crear session
+            req.session.user = result[0].username;
+            req.session.loggedIn = true;
+            res.json({code: 200, message: 'Usuario autenticado'}).status(200);
+        }else{
+            //contraseña incorrecta
+            res.status(400).json({code: 400, message: 'Contraseña incorrecta'});
+        }
+    }
+    else{
+        //usuario no existe
+        res.status(400).json({code: 400, message: 'Usuario no existe'});
     }
 
     //codigos de respuesta . . .
-    //200: usuario guardado
-    //410: usuario ya existe
-    //411: curp ya existe
-    //412: curp no es valido
-    //413: campos incompletos
-    //500: algo salio mal
-}
-
-export const login = (req, res) => {
-    res.send('Hello World')
+    //200: usuario autenticado
+    //400: error del usuario
+    //500: error del servidor
 }
