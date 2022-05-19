@@ -1,10 +1,12 @@
 import { Router } from "express";
-import { getPrueba, register } from "../controllers/users_control";
+import { auth } from "../../middelware/auth";
+import { getPrueba, login, register} from "../controllers/users_control";
 
 const router = Router()
 
-router.get('/', getPrueba)
-router.post('/login', getPrueba)
-router.post('/register', register)
+router.post('/login', login);
+router.post('/register', register);
+router.use(auth);
+router.get('/', getPrueba);
 
 export default router

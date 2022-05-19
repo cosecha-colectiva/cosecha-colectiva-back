@@ -1,5 +1,6 @@
+import { port } from '../config/config'
 import app from './app'
-import '../config/database'
 
-app.listen(3000)
-console.log('Server on port 3000')
+app.listen(port, () => {
+    console.log(`Server on port ${port}`)
+})
