@@ -2,26 +2,17 @@ const jwt = require('jsonwebtoken');
 const db = require('../../config/database');
 var bcrypt = require('bcrypt');
 const {secret} = require('../../config/config');
-
-//funcion interna para validar un curp
-function validarCurp(curp) {
-    const regex = /^([A-Z][AEIOUX][A-Z]{2}\d{2}(?:0[1-9]|1[0-2])(?:0[1-9]|[12]\d|3[01])[HM](?:AS|B[CS]|C[CLMSH]|D[FG]|G[TR]|HG|JC|M[CNS]|N[ETL]|OC|PL|Q[TR]|S[PLR]|T[CSL]|VZ|YN|ZS)[B-DF-HJ-NP-TV-Z]{3}[A-Z\d])(\d)$/;
-    if (regex.test(curp)) {
-        return true;
-    } else {
-        return false;
-    }
-}
+import {validarCurp, Fecha_actual} from '../funciones_js/validaciones';
 
 export const getPrueba = async (req, res) => {
-    let query = "SELECT * FROM socios";
-    const rows = await db.query(query);
-    console.log(rows);
+    // let query = "SELECT * FROM socios";
+    // const rows = await db.query(query);
+    // console.log(rows);
     res.send('Hello World')
 }
 
 export const register = async (req, res) => {
-    const {Nombres, Apellidos, CURP, Fecha_nac, Nacionalidad, Sexo, Escolaridad, Ocupacion, Estado_civil, Hijos, Telefono, Email, Localidad, Municipio, Estado, CP, Pais, Foto_perfil, Username, Password, Fecha_reg, Pregunta_sec, Respuesta_sec} = req.body;
+    const {Nombres, Apellidos, CURP, Fecha_nac, Nacionalidad, Sexo, Escolaridad, Ocupacion, Estado_civil, Hijos, Telefono, Email, Localidad, Municipio, Estado, CP, Pais, Foto_perfil, Username, Password, Pregunta_sec, Respuesta_sec} = req.body;
     
     //comprobar que el usuario no exista
     let query = "SELECT * FROM socios WHERE Username = ?";
@@ -42,14 +33,15 @@ export const register = async (req, res) => {
     }
 
     //comprobar que los campos esten completos
-    if(Nombres && Apellidos && CURP && Fecha_nac && Nacionalidad && Sexo && Escolaridad && Ocupacion && Estado_civil && Hijos && Telefono && Email && Localidad && Municipio && Estado && CP && Pais && Foto_perfil && Username && Password && Fecha_reg && Pregunta_sec && Respuesta_sec){
+    if(Nombres && Apellidos && CURP && Fecha_nac && Nacionalidad && Sexo && Escolaridad && Ocupacion && Estado_civil && Hijos && Telefono && Email && Localidad && Municipio && Estado && CP && Pais && Foto_perfil && Username && Password && Pregunta_sec && Respuesta_sec){
         var BCRYPT_SALT_ROUNDS =12   //variable para indicar los saltos a bcrypt
         bcrypt.hash(Password, BCRYPT_SALT_ROUNDS)
         .then(function(hashedPassword){
             var password = hashedPassword;
             console.log(password);
+            const Fecha_reg = Fecha_actual();
             let query = "INSERT INTO socios (Nombres, Apellidos, CURP, Fecha_nac, Nacionalidad, Sexo, Escolaridad, Ocupacion, Estado_civil, Hijos, Telefono, Email, Localidad, Municipio, Estado, CP, Pais, Foto_perfil, Username, Password, Fecha_reg, Pregunta_sec, Respuesta_sec)";
-            query += `VALUES ('${Nombres}', '${Apellidos}', '${CURP}', '${Fecha_nac}', '${Nacionalidad}', '${Sexo}', '${Escolaridad}', '${Ocupacion}', '${Estado_civil}', '${Hijos}', '${Telefono}', '${Email}', '${Localidad}', '${Municipio}', '${Estado}', '${CP}', '${Pais}', '${Foto_perfil}', '${Username}', '${password}', '${Fecha_nac}', '${Pregunta_sec}', '${Respuesta_sec}')`;
+            query += `VALUES ('${Nombres}', '${Apellidos}', '${CURP}', '${Fecha_nac}', '${Nacionalidad}', '${Sexo}', '${Escolaridad}', '${Ocupacion}', '${Estado_civil}', '${Hijos}', '${Telefono}', '${Email}', '${Localidad}', '${Municipio}', '${Estado}', '${CP}', '${Pais}', '${Foto_perfil}', '${Username}', '${password}', '${Fecha_reg}', '${Pregunta_sec}', '${Respuesta_sec}')`;
             db.query(query);
 
             res.json({code: 200, message: 'Usuario guardado'}).status(200);
