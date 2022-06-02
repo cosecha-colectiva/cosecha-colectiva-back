@@ -36,7 +36,7 @@ export const crear_acuerdos = async (req, res) => {
     if(Ampliacion_prestamos != "0"){
         Interes_ampliacion = req.body.Interes_ampliacion;
     }
-
+    
     // Verificar que los campos esten completos
     if(Grupo_id && Fecha_acuerdos_fin && Status && Periodo_reuniones && Periodo_cargos && Limite_inasistencias && Minimo_aportacion && Costo_acciones && Tasa_interes && Limite_credito && Porcentaje_fondo_comun && Creditos_simultaneos && Interes_morosidad && Ampliacion_prestamos && Mod_calculo_interes && Tasa_interes_prestamo_grande && Id_socio_administrador && Id_socio_administrador_suplente){
         //insertar en la base de datos
