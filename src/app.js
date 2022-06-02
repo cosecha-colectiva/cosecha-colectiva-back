@@ -1,10 +1,12 @@
 import express from "express";
+const cors = require('cors');
+const morgan = require("morgan");
+
+import { auth } from "../middelware/auth";
 import userRoutes from './routes/users_routes'
 import gruposRoutes from './routes/grupos_routes'
 import acuerdosRoutes from './routes/acuerdos_routes'
-import { auth } from "../middelware/auth";
-const cors = require('cors');
-const morgan = require("morgan");
+const sesionesRoutes = require('./routes/sesiones_routes');
 
 const app = express();
 
@@ -21,6 +23,7 @@ app.use(userRoutes);
 app.use(auth);
 app.use(gruposRoutes);
 app.use(acuerdosRoutes);
+app.use(sesionesRoutes);
 
 
 export default app
