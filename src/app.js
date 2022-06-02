@@ -1,9 +1,10 @@
 import express from "express";
 import userRoutes from './routes/users_routes'
 import gruposRoutes from './routes/grupos_routes'
+import acuerdosRoutes from './routes/acuerdos_routes'
+import { auth } from "../middelware/auth";
 const cors = require('cors');
 const morgan = require("morgan");
-const config = require("../config/config");
 
 const app = express();
 
@@ -13,8 +14,13 @@ app.use(express.json());
 app.use(express.urlencoded({extended: true}));
 app.use(morgan('dev'));
 
-// Routes
+// Rutas publicas
 app.use(userRoutes);
+
+// Rutas protegidas
+app.use(auth);
 app.use(gruposRoutes);
+app.use(acuerdosRoutes);
+
 
 export default app
