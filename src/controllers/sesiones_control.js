@@ -3,7 +3,7 @@ const db = require("../../config/database");
 /* Estructura de tabla sesiones
 Sesion_id
 Fecha_sesion
-Caja -- got from caja of previous session by a query to db
+Caja
 Grupo_id
 */
 
@@ -54,73 +54,6 @@ export const crear_sesion = async (req, res) => {
     */
 }
 
-// Actualizar caja de sesion
-export const actualizar_caja = async (req, res) => {
-    const {Caja, Sesion_id} = req.body;
-
-    //comprobar que haya Caja y Sesion_id
-    if(Caja && Sesion_id){
-        //actualizar caja
-        try{
-            let query = "UPDATE sesiones SET Caja = ? WHERE Sesion_id = ?";
-            await db.query(query, [Caja, Sesion_id]);
-            res.json({code: 200, message: 'Caja actualizada'}).status(200);
-        }catch(err){
-            res.json({code: 500, message: 'Error al actualizar caja'}).status(500);
-        }
-    }else{
-        // campos incompletos
-        res.json({code: 400, message: 'Campos incompletos'}).status(400);
-    }
-
-    /* Codigos de respuesta
-    200: Caja actualizada
-    400: Campos incompletos
-    500: Error al actualizar caja
-    */
-
-    /* Json de prueba
-    {
-        "Caja": 100,
-        "Sesion_id": 4 
-    }
-    */
-}
-
-// registrar asistencia individual
-export const registrar_asistencia = async (req, res) => {
-    const {Presente, Sesion_id, Socio_id} = req.body;
-
-    //comprobar que haya Presente, Sesion_id y Socio_id
-    if(Presente && Sesion_id && Socio_id){
-        //registrar asistencia
-        try{
-            let query = "INSERT INTO asistencias (Presente, Sesion_id, Socio_id) VALUES (?, ?, ?)";
-            await db.query(query, [Presente, Sesion_id, Socio_id]);
-            res.json({code: 200, message: 'Asistencia registrada'}).status(200);
-        }catch(err){
-            res.json({code: 500, message: 'Error al registrar asistencia'}).status(500);
-        }
-    }else{
-        // campos incompletos
-        res.json({code: 400, message: 'Campos incompletos'}).status(400);
-    }
-
-    /* Codigos de respuesta
-    200: Asistencia registrada
-    400: Campos incompletos
-    500: Error al registrar asistencia
-    */
-
-    /* Json de prueba
-    {
-        "Presente": 1,
-        "Sesion_id": 4,
-        "Socio_id": 54
-    }
-    */
-}
-
 // registrar asistencias de un grupo
 //recibe el id de la sesion y un array de json con {Socio_id, Presente}
 export const registrar_asistencias = async (req, res) => {
@@ -165,3 +98,71 @@ export const registrar_asistencias = async (req, res) => {
     }
     */
 }
+
+// Actualizar caja de sesion
+// export const actualizar_caja = async (req, res) => {
+//     const {Caja, Sesion_id} = req.body;
+
+//     //comprobar que haya Caja y Sesion_id
+//     if(Caja && Sesion_id){
+//         //actualizar caja
+//         try{
+//             let query = "UPDATE sesiones SET Caja = ? WHERE Sesion_id = ?";
+//             await db.query(query, [Caja, Sesion_id]);
+//             res.json({code: 200, message: 'Caja actualizada'}).status(200);
+//         }catch(err){
+//             res.json({code: 500, message: 'Error al actualizar caja'}).status(500);
+//         }
+//     }else{
+//         // campos incompletos
+//         res.json({code: 400, message: 'Campos incompletos'}).status(400);
+//     }
+
+//     /* Codigos de respuesta
+//     200: Caja actualizada
+//     400: Campos incompletos
+//     500: Error al actualizar caja
+//     */
+
+//     /* Json de prueba
+//     {
+//         "Caja": 100,
+//         "Sesion_id": 4 
+//     }
+//     */
+// }
+
+// registrar asistencia individual
+// export const registrar_asistencia = async (req, res) => {
+//     const {Presente, Sesion_id, Socio_id} = req.body;
+
+//     //comprobar que haya Presente, Sesion_id y Socio_id
+//     if(Presente && Sesion_id && Socio_id){
+//         //registrar asistencia
+//         try{
+//             let query = "INSERT INTO asistencias (Presente, Sesion_id, Socio_id) VALUES (?, ?, ?)";
+//             await db.query(query, [Presente, Sesion_id, Socio_id]);
+//             res.json({code: 200, message: 'Asistencia registrada'}).status(200);
+//         }catch(err){
+//             res.json({code: 500, message: 'Error al registrar asistencia'}).status(500);
+//         }
+//     }else{
+//         // campos incompletos
+//         res.json({code: 400, message: 'Campos incompletos'}).status(400);
+//     }
+
+//     /* Codigos de respuesta
+//     200: Asistencia registrada
+//     400: Campos incompletos
+//     500: Error al registrar asistencia
+//     */
+
+//     /* Json de prueba
+//     {
+//         "Presente": 1,
+//         "Sesion_id": 4,
+//         "Socio_id": 54
+//     }
+//     */
+// }
+
