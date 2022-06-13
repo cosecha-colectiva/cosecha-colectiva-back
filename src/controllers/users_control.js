@@ -80,14 +80,16 @@ export const login = async (req, res) => {
             }, secret);
 
             //mandando token por el header
-            res.status(200)
-                .header('Authorization', token)
-                .json({ code: 200, message: 'Usuario autenticado'})
+            return res.status(200)
+                .json({ code: 200, message: 'Usuario autenticado', token });
+        }
+        else{
+            return res.status(400).json({ code: 400, message: 'Contraseña incorrecta' });
         }
     }
     else{
         //usuario no existe
-        res.status(400).json({code: 400, message: 'Usuario no existe'});
+        return res.status(400).json({code: 400, message: 'Usuario no existe'});
     }
 
     //codigos de respuesta . . .
