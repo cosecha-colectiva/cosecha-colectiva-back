@@ -4,19 +4,12 @@ var bcrypt = require('bcrypt');
 const {secret} = require('../../config/config');
 import {validarCurp, Fecha_actual} from '../funciones_js/validaciones';
 
-export const getPrueba = async (req, res) => {
-    // let query = "SELECT * FROM socios";
-    // const rows = await db.query(query);
-    // console.log(rows);
-    res.send('Hello World')
-}
-
 export const register = async (req, res) => {
     const {Nombres, Apellidos, CURP, Fecha_nac, Nacionalidad, Sexo, Escolaridad, Ocupacion, Estado_civil, Hijos, Telefono, Email, Localidad, Municipio, Estado, CP, Pais, Foto_perfil, Username, Password, Pregunta_sec, Respuesta_sec} = req.body;
     
     //comprobar que el usuario no exista
     let query = "SELECT * FROM socios WHERE Username = ?";
-    const rows = await db.query(query, [Username]);
+    const rows = db.query(query, [Username]);
     if(rows.length > 0){
         return res.status(400).json({ code: 400, message: 'El usuario ya existe' });
     }
@@ -27,7 +20,7 @@ export const register = async (req, res) => {
     }
     //comprobar que el curp sea unico
     query = "SELECT * FROM socios WHERE CURP = ?";
-    const curpsIguales = await db.query(query, [CURP]);
+    const curpsIguales = db.query(query, [CURP]);
     if(curpsIguales.length > 0){
         return res.status(400).json({ code: 400, message: 'El curp ya existe' });
     }
@@ -47,8 +40,6 @@ export const register = async (req, res) => {
             res.json({code: 200, message: 'Usuario guardado'}).status(200);
         })
         .catch(function(error){
-            console.log("Error saving user: ");
-            console.log(error);
             res.status(500).json({code: 500, message:'Algo salio mal'});
         })
         
@@ -67,7 +58,7 @@ export const register = async (req, res) => {
 export const login = async (req, res) => {
     const { Username, Password } = req.body;
     let query = "SELECT * FROM socios WHERE Username = ?";
-    let result = await db.query(query, [Username]);
+    let result = db.query(query, [Username]);
     
     //validar que existe el usuario
     if(result.length > 0){

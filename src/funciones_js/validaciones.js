@@ -18,12 +18,12 @@ export const Fecha_actual = function () {
     return year + '-' + month + '-' + day;
 }
 
-export const generarCodigoValido = async function(){
+export const generarCodigoValido = function(){
     while(true){
         const rand = random(6, {letters: false});
         //comprobar que el codigo de grupo no exista
         let query = "SELECT * FROM grupos WHERE Codigo_grupo = ?";
-        const rows = await db.query(query, [rand])
+        const rows = db.query(query, [rand])
         if(rows.length == 0){
             return rand;
         }

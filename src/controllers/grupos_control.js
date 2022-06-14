@@ -11,7 +11,7 @@ export const crear_grupos = async (req, res) => {
         const codigo_grupo = await generarCodigoValido();
         const Fecha_reg = Fecha_actual();
         let query = "INSERT INTO grupos (Nombre_grupo, Codigo_grupo, Localidad, Municipio, Estado, CP, Pais, Fecha_reg) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
-        const rows = await db.query(query, [Nombre_grupo, codigo_grupo, Localidad, Municipio, Estado, CP, Pais, Fecha_reg]);
+        const rows = db.query(query, [Nombre_grupo, codigo_grupo, Localidad, Municipio, Estado, CP, Pais, Fecha_reg]);
         return res.status(201).json({code: 201, message: "Grupo registrado correctamente" });
 
     }else{
