@@ -2,16 +2,16 @@ const db = require("../../config/database");
 const { actualizar_caja } = require("../funciones_js/Sesiones");
 
 const multas_control = {
-    // GET
+    // GET para enviar las multas no pagadas de un grupo
     get_multas_por_grupo: (req, res) => {
-        const { grupo_id } = req.params;
+        const { grupo_id } = req.body;
 
         if (!grupo_id) {
             return res.json({ code: 400, message: 'Campos incompletos' }).status(400);
         }
 
         try {
-            const query = "SELECT * FROM multas WHERE Grupo_id = ?";
+            const query = "SELECT * FROM multas WHERE Grupo_id = ? and Status = 0 order by Socio_id, Fecha_multa";
             const multas = db.query(query, [grupo_id]);
             return res.json({ code: 200, message: 'Multas obtenidas', data: multas }).status(200);
         } catch (err) {
@@ -20,8 +20,8 @@ const multas_control = {
         }
     },
 
-    // POST
-    crear_multa: (req, res) => {
+    // POST para generar una multa
+    crear_multa: async (req, res) => {
         const campos_multa = {
             Monto_multa: req.body.Monto_multa,
             Descripcion: req.body.Descripcion,
@@ -31,13 +31,14 @@ const multas_control = {
 
         for (const key in campos_multa) {
             if (!campos_multa[key]) {
+                console.log(key)
                 return res.json({ code: 400, message: 'Campos incompletos' }).status(400);
             }
         }
 
         try {
             const query = "INSERT INTO multas SET ?";
-            const result = db.query(query, campos_multa);
+            const result = await db.query(query, campos_multa);
             return res.json({ code: 200, message: 'Multa creada' }).status(200);
         } catch (err) {
             console.log(err);
@@ -45,25 +46,76 @@ const multas_control = {
         }
     },
 
+    // POST para pagar una multa
     pagar_multas: (req, res) => {
-        const { Multas } = req.body;
+        const { Multas, Sesion_id } = req.body;
 
         if (!Multas) {
             return res.json({ code: 400, message: 'Campos incompletos' }).status(400);
         }
 
         try {
-            const error = false;
-            for (const multa of Multas) {
-                const resultado = pagar_multa(multa.Multa_id);
-                if (resultado === -1) {
-                    error = true;
+            let multas_con_error = [];
+
+            // iterar sobre los id de las multas
+            for (const Multa_id of Multas) {
+                // obtener datos de multa
+                let query = "SELECT * FROM multas WHERE Multa_id = ?";
+                const multas = db.query(query, [Multa_id])
+            
+            //Podriamos hacerlo con un operador ternario -------------------------------------
+                // validar que la multa exista
+                if (multas.length === 0) {
+                    multas_con_error.push(Multa_id);
+                    continue;
                 }
+
+                // verificar que la multa no este pagada
+                if (multas[0].Status != 0) {
+                    multas_con_error.push(Multa_id);
+                    continue;
+                }
+            //---------------------------------------------------------------------------------
+                // extraer datos de multa
+                const { Socio_id, Monto_multa } = multas[0]; //??
+                
+                // obtener datos de la sesion Actual
+                query = "SELECT * FROM sesiones WHERE Sesion_id = ?";
+                const sesion = db.query(query, [Sesion_id]);
+                const { Caja, Grupo_id } = sesion[0];//??
+
+                // obtener id del acuerdo actual
+                query = "SELECT * FROM acuerdos WHERE Grupo_id = ? and Status = 1";
+                const acuerdos = db.query(query, [Grupo_id]);
+                const { Acuerdo_id } = acuerdos[0];
+                
+                // establecer campos de la multa
+                const campos_transaccion = {
+                    Cantidad_movimiento: +Monto_multa,
+                    Caja: Caja + Monto_multa,
+                    Sesion_id: Sesion_id,
+                    Socio_id: Socio_id,
+                    Acuerdo_id: Acuerdo_id,
+                    Catalogo_id: 24 // 24 = PAGO_MULTA
+                }
+            
+                // crear Transaccion
+                query = "INSERT INTO transacciones SET ?";
+                const resultadoTransaccion = db.query(query, campos_transaccion);
+                
+                // Actualizar Status y Transaccion_id de multa
+                query = "UPDATE multas SET Status = 1, Transaccion_id = ? WHERE Multa_id = ?";
+                db.query(query, [resultadoTransaccion.insertId, Multa_id]);
+            
+                // Actualizar caja de la sesion
+                query = "UPDATE sesiones SET Caja = ? WHERE Sesion_id = ?";
+                db.query(query, [campos_transaccion.Caja, Sesion_id]);
             }
 
-            if (error) {
-                return res.json({ code: 500, message: 'Error al pagar alguna multa' }).status(500);
+            if(multas_con_error.length > 0) {
+                return res.json({ code: 400, message: 'Multas con error', data: multas_con_error }).status(400);
             }
+
             return res.json({ code: 200, message: 'Multas pagadas' }).status(200);
         } catch (err) {
             console.log(err);
@@ -73,49 +125,3 @@ const multas_control = {
 }
 
 module.exports = multas_control;
-
-function pagar_multa (Multa_id) {
-    // obtener datos de multa
-    let query = "SELECT * FROM multas WHERE Multa_id = ?";
-    const multas = db.query(query, [Multa_id])
-
-    // verificar que la multa no este pagada
-    if (multas[0].Status != 0) {
-        return -1;
-    }
-
-    // validar que la multa exista
-    if (multas.length === 0) {
-        return -1;
-    }
-
-    // extraer datos de multa
-    const { Socio_id, Monto_multa, Sesion_id } = multas[0];
-    
-    // obtener datos de la sesion
-    query = "SELECT * FROM sesiones WHERE Sesion_id = ?";
-    const sesion = db.query(query, [Sesion_id]);
-    const { Caja_cierre } = sesion[0];
-
-    // establecer campos de la multa
-    const campos_transaccion = {
-        Cantidad_movimiento: -Monto_multa,
-        Caja: Caja_cierre,
-        Socio_id: Socio_id,
-        Sesion_id: Sesion_id,
-        Cat_id: "PAGO_MULTA"
-    }
-
-    // crear Transaccion
-    query = "INSERT INTO transacciones SET ?";
-    const resultado = db.query(query, campos_transaccion);
-    
-    // Actualizar Status y Transaccion_id de multa
-    query = "UPDATE multas SET Status = 1, Transaccion_id = ? WHERE Multa_id = ?";
-    db.query(query, [resultado.insertId, Multa_id]);
-
-    // Actualizar Caja_cierre de sesion
-    if(!actualizar_caja(Sesion_id, -Monto_multa)){
-        return -1;
-    }
-}

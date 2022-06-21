@@ -1,8 +1,8 @@
 import { Router } from "express";
-import {crear_grupos } from "../controllers/grupos_control";
+import {crear_grupo } from "../controllers/grupos_control";
 
 const router = Router()
 
-router.post('/crear_grupos', crear_grupos);
+router.post('/crear_grupo', crear_grupo);
 
 export default router

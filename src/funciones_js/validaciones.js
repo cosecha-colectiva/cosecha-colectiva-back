@@ -19,13 +19,28 @@ export const Fecha_actual = function () {
 }
 
 export const generarCodigoValido = function(){
-    while(true){
-        const rand = random(6, {letters: false});
-        //comprobar que el codigo de grupo no exista
-        let query = "SELECT * FROM grupos WHERE Codigo_grupo = ?";
-        const rows = db.query(query, [rand])
-        if(rows.length == 0){
-            return rand;
+    return new Promise(async (resolve, reject) => {
+        while(true){
+            const rand = random(6, {letters: false});
+            //comprobar que el codigo de grupo no exista
+            let query = "SELECT * FROM grupos WHERE Codigo_grupo = ?";
+            const rows = await db.query(query, [rand])
+
+            if(rows.length == 0){
+                resolve(rand);
+            }
+        }
+    });
+}
+
+// Funcion para saber si un json tiene campos como undefined
+export const campos_incompletos = (objeto) => {
+    for(let key in objeto){
+        if(objeto[key] === undefined){
+            console.log(key);
+            return true;
         }
     }
+
+    return false;
 }
