@@ -96,7 +96,7 @@ const multas_control = {
                     Sesion_id: Sesion_id,
                     Socio_id: Socio_id,
                     Acuerdo_id: Acuerdo_id,
-                    Catalogo_id: 24 // 24 = PAGO_MULTA
+                    Catalogo_id: 'PAGO_MULTA' // 24 = PAGO_MULTA
                 }
             
                 // crear Transaccion
