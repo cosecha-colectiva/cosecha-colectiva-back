@@ -31,7 +31,6 @@ export const register = async (req, res) => {
             bcrypt.hash(Password, BCRYPT_SALT_ROUNDS)
             .then(function(hashedPassword){
                 var password = hashedPassword;
-                console.log(password);
                 const Fecha_reg = Fecha_actual();
                 let query = "INSERT INTO socios (Nombres, Apellidos, CURP, Fecha_nac, Nacionalidad, Sexo, Escolaridad, Ocupacion, Estado_civil, Hijos, Telefono, Email, Localidad, Municipio, Estado, CP, Pais, Foto_perfil, Username, Password, Fecha_reg, Pregunta_sec, Respuesta_sec)";
                 query += `VALUES ('${Nombres}', '${Apellidos}', '${CURP}', '${Fecha_nac}', '${Nacionalidad}', '${Sexo}', '${Escolaridad}', '${Ocupacion}', '${Estado_civil}', '${Hijos}', '${Telefono}', '${Email}', '${Localidad}', '${Municipio}', '${Estado}', '${CP}', '${Pais}', '${Foto_perfil}', '${Username}', '${password}', '${Fecha_reg}', '${Pregunta_sec}', '${Respuesta_sec}')`;
@@ -72,7 +71,7 @@ export const login = async (req, res) => {
 
                 //mandando token por el header
                 return res.status(200)
-                    .json({ code: 200, message: 'Usuario autenticado', token });
+                    .json({ code: 200, message: 'Usuario autenticado', token, data:{Socio_id: result[0].Socio_id, Username: result[0].Username} });
             }
             else{
                 return res.status(400).json({ code: 400, message: 'Contraseña incorrecta' });

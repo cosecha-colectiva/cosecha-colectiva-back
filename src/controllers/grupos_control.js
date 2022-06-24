@@ -2,7 +2,8 @@ const db = require('../../config/database');
 import {campos_incompletos, Fecha_actual, generarCodigoValido} from '../funciones_js/validaciones';
 
 // Funcion para creacion de grupos
-export const crear_grupo = async (req, res) => {
+export const crear_grupo = async (req, res, next) => {
+    const id_socio_actual = req.id_socio_actual;
     // Recoger los datos del body
     const campos_grupo = {
         Nombre_grupo: req.body.Nombre_grupo,
@@ -21,8 +22,12 @@ export const crear_grupo = async (req, res) => {
 
     try {
         let query = "INSERT INTO grupos SET ?";
-        const rows = db.query(query, [campos_grupo]);
-        return res.status(201).json({code: 201, message: "Grupo registrado correctamente" });
+        const rows = await db.query(query, [campos_grupo]);
+        // return res.status(201).json({code: 201, message: "Grupo registrado correctamente" });
+
+        req.body.Socio_id = id_socio_actual;
+        req.body.Codigo_grupo = campos_grupo.Codigo_grupo;
+        next();
     } catch (error) {
         return res.status(500).json({code: 500, message: 'Error en el servidor'});
     }
@@ -30,7 +35,6 @@ export const crear_grupo = async (req, res) => {
 
 export const agregar_socio = async (req, res) => {
     const {Socio_id, Codigo_grupo} = req.body;
-    console.log(Socio_id, Codigo_grupo);
 
     if(Socio_id && Codigo_grupo){
         // Verificar que existe el grupo y obtener el id del grupo con ese codigo

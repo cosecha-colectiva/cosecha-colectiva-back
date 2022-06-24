@@ -9,7 +9,7 @@ export const auth = (req, res, next) => {
     if(token){
         //validar el token
         try{
-            jwt.verify(token, secret);
+            req.id_socio_actual = (jwt.verify(token, secret)).Socio_id;
             next();
         }catch(err){
             res.status(401).json({code: 401, message: 'Token invalido'});
