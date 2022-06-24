@@ -37,7 +37,16 @@ export const crear_acuerdos = async (req, res) => { //
         db.query(query, [campos_acuerdo.Grupo_id]);
         
         query = "INSERT INTO acuerdos SET ?";
-        const rows = db.query(query, [campos_acuerdo]);
+        const rows = await db.query(query, [campos_acuerdo]);
+
+        // Actualizar tipo socio a administrador
+        query = "UPDATE grupo_socio SET Tipo_socio = 'ADMIN' WHERE Grupo_id = ? AND Socio_id = ?";
+        const result_socio_admin = await db.query(query, [campos_acuerdo.Grupo_id, campos_acuerdo.Id_socio_administrador]);
+
+        // Actualizar tipo socio a Suplente
+        query = "UPDATE grupo_socio SET Tipo_socio = 'SUPLENTE' WHERE Grupo_id = ? AND Socio_id = ?";
+        const result_socio_suplente = await db.query(query, [campos_acuerdo.Grupo_id, campos_acuerdo.Id_socio_administrador_suplente]);
+
         return res.status(200).json({code: 200, message: "Acuerdo registrado correctamente" });
     } catch(error){
         if(error.errno == 1452){
