@@ -51,8 +51,8 @@ export const agregar_socio = async (req, res) => {
         }
 
         // obtener socios activos del grupo
-        query = "SELECT * FROM grupo_socio WHERE Codigo_grupo = ? AND Status = 1";
-        const socios_activos = db.query(query, [Codigo_grupo]);
+        query = "SELECT * FROM grupo_socio WHERE Grupo_id = ? AND Status = 1";
+        const socios_activos = await db.query(query, [grupo_id[0].Grupo_id]);
 
         // comprobar si el socio ya está en el grupo
         if (socios_activos.find((socio) => socio.Socio_id == Socio_id)) {
@@ -63,7 +63,7 @@ export const agregar_socio = async (req, res) => {
         try {
             //comprobar si el grupo está vacio, para hacer CREADOR al que se une
             const gpo_vacio = !socios_activos.length;
-                query = `INSERT INTO grupo_socio (Grupo_id, Socio_id ${gpo_vacio ? ", Tipo_socio" : ""}) VALUES (?, ? ${gpo_vacio ? ", 'CREADOR'" : ""})`;
+            query = `INSERT INTO grupo_socio (Grupo_id, Socio_id ${gpo_vacio ? ", Tipo_socio" : ""}) VALUES (?, ? ${gpo_vacio ? ", 'CREADOR'" : ""})`;
             await db.query(query, [grupo_id[0].Grupo_id, Socio_id]);
             return res.status(200).json({ code: 200, message: "Socio agregado al grupo correctamente", data: {Codigo_grupo}});
         } catch (error) {
