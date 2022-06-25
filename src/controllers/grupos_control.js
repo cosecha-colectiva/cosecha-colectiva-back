@@ -1,5 +1,5 @@
 const db = require('../../config/database');
-import {campos_incompletos, Fecha_actual, generarCodigoValido} from '../funciones_js/validaciones';
+import { campos_incompletos, Fecha_actual, generarCodigoValido } from '../funciones_js/validaciones';
 
 // Funcion para creacion de grupos
 export const crear_grupo = async (req, res, next) => {
@@ -16,8 +16,8 @@ export const crear_grupo = async (req, res, next) => {
         Fecha_reg: Fecha_actual()
     };
 
-    if(campos_incompletos(campos_grupo)){
-        res.status(400).json({code: 400, message: 'Campos incompletos'});
+    if (campos_incompletos(campos_grupo)) {
+        res.status(400).json({ code: 400, message: 'Campos incompletos' });
     }
 
     try {
@@ -29,40 +29,46 @@ export const crear_grupo = async (req, res, next) => {
         req.body.Codigo_grupo = campos_grupo.Codigo_grupo;
         next();
     } catch (error) {
-        return res.status(500).json({code: 500, message: 'Error en el servidor'});
+        return res.status(500).json({ code: 500, message: 'Error en el servidor' });
     }
 }
 
 export const agregar_socio = async (req, res) => {
-    const {Socio_id, Codigo_grupo} = req.body;
+    const { Socio_id, Codigo_grupo } = req.body;
 
-    if(Socio_id && Codigo_grupo){
+    if (Socio_id && Codigo_grupo) {
         // Verificar que existe el grupo y obtener el id del grupo con ese codigo
         let query = "SELECT Grupo_id FROM grupos WHERE Codigo_grupo = ?";
         const grupo_id = await db.query(query, [Codigo_grupo]);
-        if(grupo_id.length == 0){
-            return res.status(500).json({code: 500, message: 'Este grupo no existe'});
+        if (grupo_id.length == 0) {
+            return res.status(500).json({ code: 500, message: 'Este grupo no existe' });
         }
         // Verificar que existe el socio y obtener el id del grupo con ese codigo
         let query2 = "SELECT * FROM socios WHERE Socio_id = ?";
         const socio = await db.query(query2, [Socio_id]);
-        if(socio.length == 0){
-            return res.status(500).json({code: 500, message: 'Este socio no existe'});
+        if (socio.length == 0) {
+            return res.status(500).json({ code: 500, message: 'Este socio no existe' });
         }
-        // Verificar que el socio no este ya agregado a este grupo y este activo
-        let query3 = "SELECT * FROM grupo_socio WHERE Socio_id = ? AND Grupo_id = ? AND Status = 1";
-        const union = await  db.query(query3, [Socio_id, Codigo_grupo]);
-        if(union.length == 0){
-            try{
-                let query4 = "INSERT INTO grupo_socio (Grupo_id, Socio_id) VALUES (?, ?) ";
-                db.query(query4, [grupo_id[0].Grupo_id, Socio_id]);
-                return res.status(201).json({code: 201, message: "Socio agregado al grupo correctamente" });
-            }catch{
-                return res.status(500).json({code: 500, message: 'Error al agregar un socio al grupo'});
-            }
-        }else{
-            return res.status(500).json({code: 500, message: 'Este usuario ya esta agregado al grupo'});
+
+        // obtener socios activos del grupo
+        query = "SELECT * FROM grupo_socio WHERE Codigo_grupo = ? AND Status = 1";
+        const socios_activos = db.query(query, [Codigo_grupo]);
+
+        // comprobar si el socio ya está en el grupo
+        if (socios_activos.find((socio) => socio.Socio_id == Socio_id)) {
+            return res.status(500).json({ code: 500, message: 'Este usuario ya esta agregado al grupo' });
+        }
+
+        //ejecutar la consulta
+        try {
+            //comprobar si el grupo está vacio, para hacer CREADOR al que se une
+            const gpo_vacio = !socios_activos.length;
+                query = `INSERT INTO grupo_socio (Grupo_id, Socio_id ${gpo_vacio ? ", Tipo_socio" : ""}) VALUES (?, ? ${gpo_vacio ? ", 'CREADOR'" : ""})`;
+            await db.query(query, [grupo_id[0].Grupo_id, Socio_id]);
+            return res.status(200).json({ code: 200, message: "Socio agregado al grupo correctamente", data: {Codigo_grupo}});
+        } catch (error) {
+            return res.status(500).json({ code: 500, message: "Error al agregar Socio al grupo" });
         }
     }
-    return res.status(500).json({code: 500, message: 'Campos incompletos'});
+    return res.status(500).json({ code: 500, message: 'Campos incompletos' });
 }
