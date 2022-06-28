@@ -44,3 +44,39 @@ export const campos_incompletos = (objeto) => {
 
     return false;
 }
+
+// Valida si el grupo existe en la BD
+export const existe_grupo = async (Grupo_id) => {
+    let query = "SELECT * FROM grupos WHERE Codigo_grupo = ? or Grupo_id = ?";
+    const grupo = await db.query(query, [Grupo_id, Grupo_id]);
+
+    if (grupo.length != 0) {
+        return grupo[0];
+    }
+    
+    throw "Ese grupo no existe";
+};
+
+// Valida si el socio existe en la BD
+export const existe_socio = async (Socio_id) => {
+    let query = "SELECT * FROM socios WHERE Socio_id = ?";
+    const socio = await db.query(query, [Socio_id]);
+
+    if (socio.length != 0) {
+        return socio[0];
+    }
+
+    throw 'Este socio no existe';
+}
+
+// Verificar que el socio esté en el grupo
+export const socio_en_grupo = async (Socio_id, Grupo_id) => {
+    let query = "SELECT * FROM grupo_socio WHERE Socio_id = ? and Grupo_id = ?";
+    const socio = await db.query(query, [Socio_id, Grupo_id]);
+
+    if (socio.length != 0) {
+        return socio[0];
+    }
+
+    throw 'Este socio no existe';
+}

@@ -91,3 +91,44 @@ export const login = async (req, res) => {
     //400: error del usuario
     //500: error del servidor
 }
+
+
+//funcion para Recuperar Contraseña
+export const recuperar_ = async (req, res) => {
+    const { Username, Password } = req.body;
+    if(Username && Password){
+        let query = "SELECT * FROM socios WHERE Username = ?";
+        let result = await db.query(query, [Username]);
+        
+        //validar que existe el usuario
+        if(result.length > 0){
+            //validar que la contraseña sea correcta
+            if(bcrypt.compareSync(Password, result[0].Password)){
+                //generar token
+                const token = jwt.sign({
+                    Username: result[0].Username,
+                    Socio_id: result[0].Socio_id
+                }, secret);
+
+                //mandando token por el header
+                return res.status(200)
+                    .json({ code: 200, message: 'Usuario autenticado', token, data:{Socio_id: result[0].Socio_id, Username: result[0].Username} });
+            }
+            else{
+                return res.status(400).json({ code: 400, message: 'Contraseña incorrecta' });
+            }
+        }
+        else{
+            //usuario no existe
+            return res.status(400).json({code: 400, message: 'Usuario no existe'});
+        }
+    }else{
+        //campos incompletos
+        res.status(400).json({code: 400, message: 'Campos incompletos'});
+    }
+
+    //codigos de respuesta . . .
+    //200: usuario autenticado
+    //400: error del usuario
+    //500: error del servidor
+}

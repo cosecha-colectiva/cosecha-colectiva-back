@@ -9,6 +9,7 @@ export const crear_sesion = async (req, res) => {
     const Grupo_id = req.body.Grupo_id;
     //comprobar que haya Grupo_id
     if(Grupo_id){
+        //VERIFICAR QUE EXISTE EL GRUPO
         // obtener caja final de la sesion anterior
         let query = "SELECT Caja FROM sesiones WHERE Grupo_id = ? ORDER BY Fecha DESC LIMIT 1";
         const rows = await db.query(query, [req.body.Grupo_id]);
@@ -63,4 +64,51 @@ export const registrar_asistencias = async (req, res) => {
     }
     
     return res.json({code: 200, message: 'Asistencias registradas'}).status(200);
+}
+
+//Obtener inasistencias de la sesion
+export const enviar_inasistencias_sesion = async (req, res) => {
+
+    const {Sesion_id} = req.body;
+
+    //comprobar que haya Sesion_id y Socios
+    if(!Sesion_id){
+        // campos incompletos
+        return res.json({code: 400, message: 'Campos incompletos'}).status(400);
+    }
+
+    //buscar los registros con el id de la sesion y de los socios
+    try{
+        let query = "CALL obtener_inasistencias_sesion(?)";
+        const retardos = (await db.query(query, [Sesion_id]))[0];
+        return res.json({code: 200, message: 'Retardos obtenidos', data: retardos}).status(200);
+    }catch(err){
+        return res.json({code: 500, message: 'Error al obtener retardos'}).status(500);
+    }
+    
+}
+
+
+//Registrar retardos
+export const registrar_retardos = async (req, res) => {
+
+    const {Sesion_id, Socios} = req.body;
+
+    //comprobar que haya Sesion_id y Socios
+    if(!Sesion_id || !Socios){
+        // campos incompletos
+        return res.json({code: 400, message: 'Campos incompletos'}).status(400);
+    }
+
+    //buscar los registros con el id de la sesion y de los socios
+    try{
+        for(let i = 0; i < Socios.length; i++){
+            let query = "UPDATE asistencias SET Presente = 2 WHERE Sesion_id = ? AND Socio_id = ? AND Presente != 1";
+            db.query(query, [Sesion_id, Socios[i]]);
+        }
+        return res.json({code: 200, message: 'Retardos registrados'}).status(200);
+    }catch(err){
+        return res.json({code: 500, message: 'Error al registrar retardos'}).status(500);
+    }
+    
 }

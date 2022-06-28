@@ -39,6 +39,10 @@ export const crear_acuerdos = async (req, res) => { //
         query = "INSERT INTO acuerdos SET ?";
         const rows = await db.query(query, [campos_acuerdo]);
 
+        // Cambiar el socio de Creador a normal
+        query = "UPDATE grupo_socio SET Tipo_socio = 'SOCIO' WHERE Grupo_id = ? AND Tipo_socio = 'CREADOR'";
+        const result_socio_creador = await db.query(query, [campos_acuerdo.Grupo_id]);
+
         // Actualizar tipo socio a administrador
         query = "UPDATE grupo_socio SET Tipo_socio = 'ADMIN' WHERE Grupo_id = ? AND Socio_id = ?";
         const result_socio_admin = await db.query(query, [campos_acuerdo.Grupo_id, campos_acuerdo.Id_socio_administrador]);

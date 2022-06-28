@@ -3,7 +3,7 @@ const { actualizar_caja } = require("../funciones_js/Sesiones");
 
 const multas_control = {
     // GET para enviar las multas no pagadas de un grupo
-    get_multas_por_grupo: (req, res) => {
+    get_multas_por_grupo: async (req, res) => {
         const { grupo_id } = req.body;
 
         if (!grupo_id) {
@@ -11,8 +11,8 @@ const multas_control = {
         }
 
         try {
-            const query = "SELECT * FROM multas WHERE Grupo_id = ? and Status = 0 order by Socio_id, Fecha_multa";
-            const multas = db.query(query, [grupo_id]);
+            const query = "SELECT * FROM multas WHERE Grupo_id = ? and Status = 0 order by Socio_id, Sesion_id";
+            const multas = await db.query(query, [grupo_id]);
             return res.json({ code: 200, message: 'Multas obtenidas', data: multas }).status(200);
         } catch (err) {
             console.log(err);
@@ -36,9 +36,10 @@ const multas_control = {
             }
         }
 
+        //FALTA VALIDAR QUE EL USUARIO PERTENEZCA A ESE GRUPO
         try {
             const query = "INSERT INTO multas SET ?";
-            const result = await db.query(query, campos_multa);
+            const result =  await db.query(query, campos_multa);
             return res.json({ code: 200, message: 'Multa creada' }).status(200);
         } catch (err) {
             console.log(err);
@@ -47,7 +48,7 @@ const multas_control = {
     },
 
     // POST para pagar una multa
-    pagar_multas: (req, res) => {
+    pagar_multas: async (req, res) => {
         const { Multas, Sesion_id } = req.body;
 
         if (!Multas) {
@@ -61,7 +62,7 @@ const multas_control = {
             for (const Multa_id of Multas) {
                 // obtener datos de multa
                 let query = "SELECT * FROM multas WHERE Multa_id = ?";
-                const multas = db.query(query, [Multa_id])
+                const multas = await db.query(query, [Multa_id])
             
             //Podriamos hacerlo con un operador ternario -------------------------------------
                 // validar que la multa exista
@@ -81,12 +82,12 @@ const multas_control = {
                 
                 // obtener datos de la sesion Actual
                 query = "SELECT * FROM sesiones WHERE Sesion_id = ?";
-                const sesion = db.query(query, [Sesion_id]);
+                const sesion = await db.query(query, [Sesion_id]);
                 const { Caja, Grupo_id } = sesion[0];//??
 
                 // obtener id del acuerdo actual
                 query = "SELECT * FROM acuerdos WHERE Grupo_id = ? and Status = 1";
-                const acuerdos = db.query(query, [Grupo_id]);
+                const acuerdos = await db.query(query, [Grupo_id]);
                 const { Acuerdo_id } = acuerdos[0];
                 
                 // establecer campos de la multa
@@ -101,15 +102,15 @@ const multas_control = {
             
                 // crear Transaccion
                 query = "INSERT INTO transacciones SET ?";
-                const resultadoTransaccion = db.query(query, campos_transaccion);
+                const resultadoTransaccion = await db.query(query, campos_transaccion);
                 
                 // Actualizar Status y Transaccion_id de multa
                 query = "UPDATE multas SET Status = 1, Transaccion_id = ? WHERE Multa_id = ?";
-                db.query(query, [resultadoTransaccion.insertId, Multa_id]);
+                await db.query(query, [resultadoTransaccion.insertId, Multa_id]);
             
                 // Actualizar caja de la sesion
                 query = "UPDATE sesiones SET Caja = ? WHERE Sesion_id = ?";
-                db.query(query, [campos_transaccion.Caja, Sesion_id]);
+                await db.query(query, [campos_transaccion.Caja, Sesion_id]);
             }
 
             if(multas_con_error.length > 0) {

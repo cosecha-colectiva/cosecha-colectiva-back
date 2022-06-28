@@ -1,5 +1,5 @@
 const db = require('../../config/database');
-import { campos_incompletos, Fecha_actual, generarCodigoValido } from '../funciones_js/validaciones';
+import { campos_incompletos, Fecha_actual, generarCodigoValido, existe_grupo, existe_socio, socio_en_grupo } from '../funciones_js/validaciones';
 
 // Funcion para creacion de grupos
 export const crear_grupo = async (req, res, next) => {
@@ -27,6 +27,7 @@ export const crear_grupo = async (req, res, next) => {
 
         req.body.Socio_id = id_socio_actual;
         req.body.Codigo_grupo = campos_grupo.Codigo_grupo;
+        req.body.Creando_grupo = true;
         next();
     } catch (error) {
         return res.status(500).json({ code: 500, message: 'Error en el servidor' });
@@ -37,12 +38,31 @@ export const agregar_socio = async (req, res) => {
     const { Socio_id, Codigo_grupo } = req.body;
 
     if (Socio_id && Codigo_grupo) {
-        // Verificar que existe el grupo y obtener el id del grupo con ese codigo
-        let query = "SELECT Grupo_id FROM grupos WHERE Codigo_grupo = ?";
-        const grupo_id = await db.query(query, [Codigo_grupo]);
-        if (grupo_id.length == 0) {
-            return res.status(500).json({ code: 500, message: 'Este grupo no existe' });
+        try {
+            // Verificar que existe el grupo y obtener el id del grupo con ese codigo
+            const {Grupo_id} = await existe_grupo(Codigo_grupo);
+
+            // Verificar si el socio existe en la bd
+            const {} = await existe_socio(Socio_id);
+
+            // verificar que el socio esté en el grupo
+            const {} = await socio_en_grupo(Socio_id, Grupo_id);
+            // Si el socio está en el grupo...
+            // if(S != undefined){
+            //     // Si está y está inactivo... activarlo
+
+            //     // Si ya está activo... mandar error
+
+            // }
+            // si no... si req.body.Creando_grupo == true...
+                // hacerlo creador y unirlo
+            // si no... hacerlo socio normal y unirlo 
+
+
+        } catch (error) {
+            return res.status(400).json({ code: 500, message: error })
         }
+        
         // Verificar que existe el socio y obtener el id del grupo con ese codigo
         let query2 = "SELECT * FROM socios WHERE Socio_id = ?";
         const socio = await db.query(query2, [Socio_id]);
@@ -51,7 +71,7 @@ export const agregar_socio = async (req, res) => {
         }
 
         // obtener socios activos del grupo
-        query = "SELECT * FROM grupo_socio WHERE Grupo_id = ? AND Status = 1";
+        let query = "SELECT * FROM grupo_socio WHERE Grupo_id = ? AND Status = 1";
         const socios_activos = await db.query(query, [grupo_id[0].Grupo_id]);
 
         // comprobar si el socio ya está en el grupo
