@@ -37,58 +37,66 @@ export const crear_grupo = async (req, res, next) => {
 export const agregar_socio = async (req, res) => {
     const { Socio_id, Codigo_grupo } = req.body;
 
+    if(!Socio_id || !Codigo_grupo){
+        return res.status(400).json({ code: 400, message: "Campos incompletos" });
+    }
+
+    try{
+        let query = "CALL agregar_socio_grupo(?, ?)";
+        const {Message, Error} = (await db.query(query, [Socio_id, Codigo_grupo]))[0][0];
+
+        if(Error){
+            return res.status(400).json({ code: 400, message: Error })
+        }
+
+        return res.status(200).json({ code: 200, message: Message });
+    } catch (error){
+        return res.status(500).json({ code: 500, message: 'Error en el servidor' });
+    }
+
     if (Socio_id && Codigo_grupo) {
         try {
             // Verificar que existe el grupo y obtener el id del grupo con ese codigo
-            const {Grupo_id} = await existe_grupo(Codigo_grupo);
+            const { Grupo_id } = await existe_grupo(Codigo_grupo);
 
             // Verificar si el socio existe en la bd
-            const {} = await existe_socio(Socio_id);
+            const { } = await existe_socio(Socio_id);
 
-            // verificar que el socio esté en el grupo
-            const {} = await socio_en_grupo(Socio_id, Grupo_id);
-            // Si el socio está en el grupo...
-            // if(S != undefined){
-            //     // Si está y está inactivo... activarlo
+            let query;
+            try {
+                // verificar que el socio esté en el grupo
+                const { Status } = await socio_en_grupo(Socio_id, Grupo_id);
 
-            //     // Si ya está activo... mandar error
-
-            // }
-            // si no... si req.body.Creando_grupo == true...
-                // hacerlo creador y unirlo
-            // si no... hacerlo socio normal y unirlo 
-
-
+                // Si el socio está en el grupo y está inactivo...
+                if(Status != 1) try {
+                    // Si está y está inactivo... activarlo
+                    query = "UPDATE grupo_socio SET Status = 1 where Socio_id = ? AND Grupo_id = ?";
+                    const resultado_update = await db.query(query, [Socio_id, Grupo_id]);
+                } catch (error) {
+                    return res.status(500).json({ code: 500, message: 'Error en el servidor' });
+                }
+                
+                // Si ya está activo... mandar error
+                return res.status(400).json({ code: 400, message: "El socio ya está en este grupo" });
+            } catch (error) { // si el socio no está en el grupo
+                const campos_grupo_socio = {
+                    Tipo_socio: req.body.Creando_grupo != undefined ? "CREADOR" : "SOCIO",
+                    Grupo_id,
+                    Socio_id
+                };
+                
+                try{
+                    query = "INSERT INTO grupo_socio SET ?";
+                    const result_insert = await db.query(query, [campos_grupo_socio]);
+                } catch (error) {
+                    return res.status(500).json({ code: 500, message: 'Error en el servidor' });
+                }
+            }
+            
         } catch (error) {
-            return res.status(400).json({ code: 500, message: error })
-        }
-        
-        // Verificar que existe el socio y obtener el id del grupo con ese codigo
-        let query2 = "SELECT * FROM socios WHERE Socio_id = ?";
-        const socio = await db.query(query2, [Socio_id]);
-        if (socio.length == 0) {
-            return res.status(500).json({ code: 500, message: 'Este socio no existe' });
+            return res.status(400).json({ code: 400, message: error })
         }
 
-        // obtener socios activos del grupo
-        let query = "SELECT * FROM grupo_socio WHERE Grupo_id = ? AND Status = 1";
-        const socios_activos = await db.query(query, [grupo_id[0].Grupo_id]);
-
-        // comprobar si el socio ya está en el grupo
-        if (socios_activos.find((socio) => socio.Socio_id == Socio_id)) {
-            return res.status(500).json({ code: 500, message: 'Este usuario ya esta agregado al grupo' });
-        }
-
-        //ejecutar la consulta
-        try {
-            //comprobar si el grupo está vacio, para hacer CREADOR al que se une
-            const gpo_vacio = !socios_activos.length;
-            query = `INSERT INTO grupo_socio (Grupo_id, Socio_id ${gpo_vacio ? ", Tipo_socio" : ""}) VALUES (?, ? ${gpo_vacio ? ", 'CREADOR'" : ""})`;
-            await db.query(query, [grupo_id[0].Grupo_id, Socio_id]);
-            return res.status(200).json({ code: 200, message: "Socio agregado al grupo correctamente", data: {Codigo_grupo}});
-        } catch (error) {
-            return res.status(500).json({ code: 500, message: "Error al agregar Socio al grupo" });
-        }
+        return res.status(200).json({ code: 200, message: 'Usuario Agregado al grupo' });
     }
-    return res.status(500).json({ code: 500, message: 'Campos incompletos' });
 }
