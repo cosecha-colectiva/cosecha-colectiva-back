@@ -1,4 +1,4 @@
-import { Fecha_actual, campos_incompletos } from '../funciones_js/validaciones';
+import { Fecha_actual, campos_incompletos, existe_grupo, socio_en_grupo } from '../funciones_js/validaciones';
 
 const db = require('../../config/database');
 
@@ -27,64 +27,83 @@ export const crear_acuerdos = async (req, res) => { //
         Id_socio_administrador_suplente: body.Id_socio_administrador_suplente,
     };
 
-    if(campos_incompletos(campos_acuerdo)){
-        return res.status(400).json({code: 400, message: "Campos incompletos"});
+    if (campos_incompletos(campos_acuerdo)) {
+        return res.status(400).json({ code: 400, message: "Campos incompletos" });
     }
-    
-    try{
+
+    try {
+        // Verificar que el grupo existe
+        const { } = await existe_grupo(campos_acuerdo.Grupo_id);
+
+        // Verificar que el Socio Administrador está en el grupo (por lo tanto existe)
+        const { } = await socio_en_grupo(campos_acuerdo.Id_socio_administrador, campos_acuerdo.Grupo_id);
+
+        // Verificar que el administrador suplente está en el grupo (por lo tanto existe)
+        const { } = await socio_en_grupo(campos_acuerdo.Id_socio_administrador_suplente, campos_acuerdo.Grupo_id);
+
         //Actualizar status del acuerdo anterior
         let query = "UPDATE acuerdos SET Status = 0 WHERE Grupo_id = ? and Status = 1";
-        db.query(query, [campos_acuerdo.Grupo_id]);
-        
+        const { } = await db.query(query, [campos_acuerdo.Grupo_id]);
+
         query = "INSERT INTO acuerdos SET ?";
-        const rows = await db.query(query, [campos_acuerdo]);
+        const { } = await db.query(query, [campos_acuerdo]);
 
         // Cambiar el socio de Creador a normal
         query = "UPDATE grupo_socio SET Tipo_socio = 'SOCIO' WHERE Grupo_id = ? AND Tipo_socio = 'CREADOR'";
-        const result_socio_creador = await db.query(query, [campos_acuerdo.Grupo_id]);
+        const { } = await db.query(query, [campos_acuerdo.Grupo_id]);
 
         // Actualizar tipo socio a administrador
         query = "UPDATE grupo_socio SET Tipo_socio = 'ADMIN' WHERE Grupo_id = ? AND Socio_id = ?";
-        const result_socio_admin = await db.query(query, [campos_acuerdo.Grupo_id, campos_acuerdo.Id_socio_administrador]);
+        const { } = await db.query(query, [campos_acuerdo.Grupo_id, campos_acuerdo.Id_socio_administrador]);
 
         // Actualizar tipo socio a Suplente
         query = "UPDATE grupo_socio SET Tipo_socio = 'SUPLENTE' WHERE Grupo_id = ? AND Socio_id = ?";
-        const result_socio_suplente = await db.query(query, [campos_acuerdo.Grupo_id, campos_acuerdo.Id_socio_administrador_suplente]);
+        const { } = await db.query(query, [campos_acuerdo.Grupo_id, campos_acuerdo.Id_socio_administrador_suplente]);
 
-        return res.status(200).json({code: 200, message: "Acuerdo registrado correctamente" });
-    } catch(error){
-        if(error.errno == 1452){
-            return res.status(400).json({code: 400, message: 'Error con llaves foraneas'});
-        }else{
-            console.log(error);
-            return res.status(500).json({code: 500, message: 'Error en el servidor'});
+        return res.status(200).json({ code: 200, message: "Acuerdo registrado correctamente" });
+    } catch (error) {
+        if (typeof (error) == "string") {
+            // enviar mensaje de error
+            return res.status(400).json({ code: 400, message: error });
         }
+
+        console.log(error);
+        return res.status(500).json({ code: 500, message: 'Error en el servidor' });
     }
 }
-                                      
+
 //funcion para crear acuerdo secundario
-/* Estructura de tabla 'acuerdos_secundarios':
-Acuerdo_id, Grupo_id, Regla, Acuerdo, Fecha_acuerdo, Fecha_acuerdo_fin, Activo */
 export const crear_acuerdo_secundario = async (req, res) => {
-    const {Grupo_id, Regla, Acuerdo, Fecha_acuerdo, Fecha_acuerdo_fin, Activo} = req.body;
+    const campos_acuerdo_secundario = {
+        Grupo_id: req.body.Grupo_id,
+        Regla: req.body.Regla,
+        Acuerdo: req.body.Acuerdo,
+        Fecha_acuerdo: Fecha_actual(),
+        Fecha_acuerdo_fin: req.body.Fecha_acuerdo_fin,
+        Status: 1
+    }
 
     // Verificar que los campos esten completos
-    if(Grupo_id && Regla && Acuerdo && Fecha_acuerdo && Fecha_acuerdo_fin && Activo){
-        //insertar en la base de datos
-        const query = "INSERT INTO acuerdos_secundarios (Grupo_id, Regla, Acuerdo, Fecha_acuerdo, Fecha_acuerdo_fin, Activo) VALUES (?, ?, ?, ?, ?, ?)";
+    if (campos_incompletos(campos_acuerdo_secundario)) {
+        return res.status(400).json({ code: 400, message: "Campos incompletos" });
+    }
 
-        try{
-            const rows = db.query(query, [Grupo_id, Regla, Acuerdo, Fecha_acuerdo, Fecha_acuerdo_fin, Activo]);
-            return res.status(201).json({code: 201, message: "Acuerdo secundario registrado correctamente" });
-        }catch(error){
-            if(error.errno == 1452){
-                return res.status(400).json({code: 400, message: 'Error con llaves foraneas'});
-            }else{
-                return res.status(500).json({code: 500, message: 'Error en el servidor'});
-            }
+    try {
+        // Verificar que el grupo existe
+        const { } = await existe_grupo(campos_acuerdo_secundario.Grupo_id);
+
+        let query = "INSERT INTO acuerdos_secundarios SET ?";
+        const { } = await db.query(query, [campos_acuerdo_secundario]);
+
+        return res.status(200).json({ code: 200, message: "Acuerdo secundario registrado correctamente" });
+
+    } catch (error) {
+        if (typeof (error) == "string") {
+            // enviar mensaje de error
+            return res.status(400).json({ code: 400, message: error });
         }
-    }else{
-        //campos incompletos
-        res.status(400).json({code: 400, message: 'Campos incompletos'});
+
+        console.log(error);
+        return res.status(500).json({ code: 500, message: 'Error en el servidor' });
     }
 }

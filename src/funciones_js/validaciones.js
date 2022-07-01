@@ -54,7 +54,7 @@ export const existe_grupo = async (Grupo_id) => {
         return grupo[0];
     }
     
-    throw "Ese grupo no existe";
+    throw "No existe el Grupo con el Id: " + Grupo_id;
 };
 
 // Valida si el socio existe en la BD
@@ -66,7 +66,7 @@ export const existe_socio = async (Socio_id) => {
         return socio[0];
     }
 
-    throw 'Este socio no existe';
+    throw "No existe el socio con el Id: " + Socio_id;
 }
 
 // Verificar que el socio esté en el grupo
@@ -78,5 +78,5 @@ export const socio_en_grupo = async (Socio_id, Grupo_id) => {
         return socio[0];
     }
 
-    throw 'Este socio no existe';
+    throw "El socio con id " + Socio_id + " no está en e grupo con el id " + Grupo_id;
 }
