@@ -27,7 +27,6 @@ export const crear_grupo = async (req, res, next) => {
 
         req.body.Socio_id = id_socio_actual;
         req.body.Codigo_grupo = campos_grupo.Codigo_grupo;
-        req.body.Creando_grupo = true;
         next();
     } catch (error) {
         return res.status(500).json({ code: 500, message: 'Error en el servidor' });
@@ -54,7 +53,8 @@ export const agregar_socio = async (req, res) => {
         return res.status(500).json({ code: 500, message: 'Error en el servidor' });
     }
 
-    if (Socio_id && Codigo_grupo) {
+    // LO DE ABAJO ES SIN PROCEDIMIENTOS ALMACENADOS
+    /* if (Socio_id && Codigo_grupo) {
         try {
             // Verificar que existe el grupo y obtener el id del grupo con ese codigo
             const { Grupo_id } = await existe_grupo(Codigo_grupo);
@@ -65,7 +65,7 @@ export const agregar_socio = async (req, res) => {
             let query;
             try {
                 // verificar que el socio esté en el grupo
-                const { Status } = await socio_en_grupo(Socio_id, Grupo_id);
+                const { Status } = await socio_en_grupo(Socio_id, Grupo_id); // (Avienta Excepcion)
 
                 // Si el socio está en el grupo y está inactivo...
                 if(Status != 1) try {
@@ -98,5 +98,5 @@ export const agregar_socio = async (req, res) => {
         }
 
         return res.status(200).json({ code: 200, message: 'Usuario Agregado al grupo' });
-    }
+    } */
 }
