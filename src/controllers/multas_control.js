@@ -88,7 +88,7 @@ const multas_control = {
             // cuando algo falla, levanta un error, y en el catch agregarlo a multas con error
             try {
                 // Verificar que la multa existe
-                const multa = existe_multa(Multa_id);
+                const multa = await existe_multa(Multa_id);
 
                 // Verificar que la multa no esté pagada
                 if (multa.Status != 0) {
@@ -96,7 +96,7 @@ const multas_control = {
                 }
 
                 // Verificar que existe la sesion Actual
-                const sesion = existe_sesion(Sesion_id);
+                const sesion = await existe_sesion(Sesion_id);
 
                 // obtener id del acuerdo actual
                 const acuerdo = await obtener_acuerdo_actual(sesion.Grupo_id);
