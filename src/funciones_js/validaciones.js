@@ -71,7 +71,7 @@ export const existe_socio = async (Socio_id) => {
 
 // Verificar que el socio esté en el grupo
 export const socio_en_grupo = async (Socio_id, Grupo_id) => {
-    let query = "SELECT * FROM grupo_socio WHERE Socio_id = ? and Grupo_id = ?";
+    let query = "SELECT * FROM grupo_socio WHERE Socio_id = ? and Grupo_id = ? and Status = 1";
     const socio = await db.query(query, [Socio_id, Grupo_id]);
 
     if (socio.length != 0) {
@@ -79,4 +79,48 @@ export const socio_en_grupo = async (Socio_id, Grupo_id) => {
     }
 
     throw "El socio con id " + Socio_id + " no está en e grupo con el id " + Grupo_id;
+}
+
+export const existe_sesion = async (Sesion_id) => {
+    let query = "SELECT * FROM sesiones WHERE Sesion_id = ?";
+    const sesion = await db.query(query, [Sesion_id]);
+
+    if (sesion.length != 0) {
+        return sesion[0];
+    }
+
+    throw "No existe la sesion con el Id: " + Sesion_id;
+}
+
+export const existe_multa = async (Multa_id) => {
+    let query = "SELECT * FROM multas WHERE Multa_id = ?";
+    const multa = await db.query(query, [Multa_id]);
+
+    if (multa.length != 0) {
+        return multa[0];
+    }
+
+    throw "No existe la multa con el Id: " + Multa_id;
+}
+
+export const existe_Acuerdo = async (Acuerdo_id) => {
+    let query = "SELECT * FROM acuerdos WHERE Acuerdo_id = ?";
+    const acuerdo = await db.query(query, [Acuerdo_id]);
+
+    if (acuerdo.length != 0) {
+        return acuerdo[0];
+    }
+
+    throw "No existe el acuerdo con el Id: " + Acuerdo_id;
+}
+
+export const obtener_acuerdo_actual = async (Grupo_id) => {
+    let query = "SELECT * FROM acuerdos WHERE Grupo_id = ? and Status = 1";
+    const acuerdo = await db.query(query, [Grupo_id]);
+
+    if (acuerdo.length != 0) {
+        return acuerdo[0];
+    }
+
+    throw "No hay un acuerdo vigente para este grupo";
 }
