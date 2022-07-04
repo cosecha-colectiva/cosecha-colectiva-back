@@ -33,32 +33,32 @@ export const crear_acuerdos = async (req, res) => { //
 
     try {
         // Verificar que el grupo existe
-        const { } = await existe_grupo(campos_acuerdo.Grupo_id);
+        await existe_grupo(campos_acuerdo.Grupo_id);
 
         // Verificar que el Socio Administrador está en el grupo (por lo tanto existe)
-        const { } = await socio_en_grupo(campos_acuerdo.Id_socio_administrador, campos_acuerdo.Grupo_id);
+        await socio_en_grupo(campos_acuerdo.Id_socio_administrador, campos_acuerdo.Grupo_id);
 
         // Verificar que el administrador suplente está en el grupo (por lo tanto existe)
-        const { } = await socio_en_grupo(campos_acuerdo.Id_socio_administrador_suplente, campos_acuerdo.Grupo_id);
+        await socio_en_grupo(campos_acuerdo.Id_socio_administrador_suplente, campos_acuerdo.Grupo_id);
 
         //Actualizar status del acuerdo anterior
         let query = "UPDATE acuerdos SET Status = 0 WHERE Grupo_id = ? and Status = 1";
-        const { } = await db.query(query, [campos_acuerdo.Grupo_id]);
+        await db.query(query, [campos_acuerdo.Grupo_id]);
 
         query = "INSERT INTO acuerdos SET ?";
-        const { } = await db.query(query, [campos_acuerdo]);
+        await db.query(query, [campos_acuerdo]);
 
-        // Cambiar el socio de Creador a normal
-        query = "UPDATE grupo_socio SET Tipo_socio = 'SOCIO' WHERE Grupo_id = ? AND Tipo_socio = 'CREADOR'";
-        const { } = await db.query(query, [campos_acuerdo.Grupo_id]);
+        // Cambiar el socio de Creador, admin y suplente a normal
+        query = "UPDATE grupo_socio SET Tipo_socio = 'SOCIO' WHERE Grupo_id = ? AND (Tipo_socio = 'CREADOR' or Tipo_socio = 'ADMIN' or Tipo_socio = 'SUPLENTE')";
+        await db.query(query, [campos_acuerdo.Grupo_id]);
 
         // Actualizar tipo socio a administrador
         query = "UPDATE grupo_socio SET Tipo_socio = 'ADMIN' WHERE Grupo_id = ? AND Socio_id = ?";
-        const { } = await db.query(query, [campos_acuerdo.Grupo_id, campos_acuerdo.Id_socio_administrador]);
+        await db.query(query, [campos_acuerdo.Grupo_id, campos_acuerdo.Id_socio_administrador]);
 
         // Actualizar tipo socio a Suplente
         query = "UPDATE grupo_socio SET Tipo_socio = 'SUPLENTE' WHERE Grupo_id = ? AND Socio_id = ?";
-        const { } = await db.query(query, [campos_acuerdo.Grupo_id, campos_acuerdo.Id_socio_administrador_suplente]);
+        await db.query(query, [campos_acuerdo.Grupo_id, campos_acuerdo.Id_socio_administrador_suplente]);
 
         return res.status(200).json({ code: 200, message: "Acuerdo registrado correctamente" });
     } catch (error) {
@@ -90,10 +90,10 @@ export const crear_acuerdo_secundario = async (req, res) => {
 
     try {
         // Verificar que el grupo existe
-        const { } = await existe_grupo(campos_acuerdo_secundario.Grupo_id);
+        await existe_grupo(campos_acuerdo_secundario.Grupo_id);
 
         let query = "INSERT INTO acuerdos_secundarios SET ?";
-        const { } = await db.query(query, [campos_acuerdo_secundario]);
+        await db.query(query, [campos_acuerdo_secundario]);
 
         return res.status(200).json({ code: 200, message: "Acuerdo secundario registrado correctamente" });
 

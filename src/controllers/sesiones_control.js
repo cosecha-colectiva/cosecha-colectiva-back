@@ -16,15 +16,15 @@ export const crear_sesion = async (req, res) => {
 
     try {
         //VERIFICAR QUE EXISTE EL GRUPO
-        const grupo = existe_grupo(campos_sesion.Grupo_id);
+        const grupo = await existe_grupo(campos_sesion.Grupo_id);
 
         // obtener caja final de la sesion anterior
-        let query = "SELECT Caja FROM sesiones WHERE Grupo_id = ? ORDER BY Fecha DESC LIMIT 1";
+        let query = "SELECT Caja FROM sesiones WHERE Grupo_id = ? ORDER BY Fecha desc, Sesion_id desc LIMIT 1";
         const sesiones = await db.query(query, [grupo.Grupo_id]);
         campos_sesion.Caja = sesiones[0] ? sesiones[0].Caja : 0;
 
         query = "INSERT INTO sesiones SET ?";
-        db.query(query, campos_sesion);
+        await db.query(query, campos_sesion);
 
         return res.json({ code: 200, message: 'Sesion creada' }).status(200);
     } catch (error) {
@@ -99,10 +99,10 @@ export const enviar_inasistencias_sesion = async (req, res) => {
     //buscar los registros con el id de la sesion y de los socios
     try {
         let query = "CALL obtener_inasistencias_sesion(?)";
-        const retardos = (await db.query(query, [Sesion_id]))[0];
-        return res.json({ code: 200, message: 'Retardos obtenidos', data: retardos }).status(200);
+        const inasistencias = (await db.query(query, [Sesion_id]))[0];
+        return res.json({ code: 200, message: 'Inasistencias obtenidos', data: inasistencias }).status(200);
     } catch (err) {
-        return res.json({ code: 500, message: 'Error al obtener retardos' }).status(500);
+        return res.json({ code: 500, message: 'Error al obtener inasistencias' }).status(500);
     }
 }
 

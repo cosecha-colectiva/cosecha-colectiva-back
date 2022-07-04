@@ -1,6 +1,5 @@
 const db = require("../../config/database");
-const { actualizar_caja } = require("../funciones_js/Sesiones");
-const { existe_grupo, socio_en_grupo, existe_socio, existe_sesion, existe_multa, obtener_acuerdo_actual } = require("../funciones_js/validaciones");
+const { existe_grupo, socio_en_grupo, existe_socio, existe_sesion, existe_multa, obtener_acuerdo_actual, campos_incompletos } = require("../funciones_js/validaciones");
 
 const multas_control = {
     // GET para enviar las multas no pagadas de un grupo
@@ -51,7 +50,7 @@ const multas_control = {
             const sesion = await existe_sesion(campos_multa.Sesion_id);
 
             // Obtener el grupo (por medio de la sesion)
-            const grupo = await existe_grupo(Grupo_id)
+            const grupo = await existe_grupo(sesion.Grupo_id)
 
             //FALTA VALIDAR QUE EL USUARIO PERTENEZCA A ESE GRUPO
             const { } = await socio_en_grupo(campos_multa.Socio_id, grupo.Grupo_id)
@@ -60,7 +59,7 @@ const multas_control = {
             const { } = await db.query(query, campos_multa);
 
             return res.json({ code: 200, message: 'Multa creada' }).status(200);
-        } catch (err) {
+        } catch (error) {
             if (typeof (error) == "string") {
                 // enviar mensaje de error
                 return res.status(400).json({ code: 400, message: error });
