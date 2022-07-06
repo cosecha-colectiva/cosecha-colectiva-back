@@ -1,6 +1,3 @@
 node_modules
-anotaciones.txt
 *.sql
-por_hacer.txt
-.gitignore
-prueba.js
+*.env
