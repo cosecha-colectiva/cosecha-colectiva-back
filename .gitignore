@@ -4,3 +4,4 @@ anotaciones.txt
 por_hacer.txt
 .gitignore
 prueba.js
+*.env
