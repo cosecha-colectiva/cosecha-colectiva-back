@@ -25,6 +25,29 @@ const transacciones_control = {
             return res.json({ code: 500, message: 'Campos incompletos' }).status(500);
         }
     },
+
+    // POST para agregar una pregunta al catalogo de preguntas de seguridad
+    agregar_catalogo_preguntas_seguridad: async (req, res) => {
+        const { Pregunta } = req.body;
+        if(Pregunta){
+            let consulta = "SELECT * FROM preguntas_seguridad WHERE Pregunta = ?";
+            const resultado = await db.query(consulta, [Pregunta]);
+            if(resultado.length == 0){
+                try{
+                    const query = "INSERT INTO preguntas_seguridad (Pregunta) VALUES (?)";
+                    db.query(query, [Pregunta]);
+                    return res.json({ code: 200, message: 'Nueva pregunta agregada' }).status(200);
+                }catch(err){
+                    console.log(err);
+                    return res.json({ code: 500, message: 'Error al crear pregunta' }).status(500);
+                }
+            }else{
+                return res.json({ code: 500, message: 'Ya existe esta pregunta de seguridad' }).status(500);
+            }
+        }else{
+            return res.json({ code: 500, message: 'Campos incompletos' }).status(500);
+        }
+    },
 }
 
 module.exports = transacciones_control;
