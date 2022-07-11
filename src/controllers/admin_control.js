@@ -1,7 +1,7 @@
 const { query } = require("express");
 const db = require("../../config/database");
 
-const transacciones_control = {
+const admin_control = {
 
     // POST para agregar tipos de transaccion
     agregar_catalogo_transaccion: async (req, res) => {
@@ -50,4 +50,4 @@ const transacciones_control = {
     },
 }
 
-module.exports = transacciones_control;
+module.exports = admin_control;
