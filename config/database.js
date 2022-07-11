@@ -1,14 +1,16 @@
-const mysql =require('mysql');
-const util =require('util');
-const {host, user, password, database} = require('../config/config');
+const mysql = require('mysql2');
+const { host, user, password, database } = require('../config/config');
 
-const db = mysql.createPool({
-    connectionLimit:10,
+const pool = mysql.createPool({
+    connectionLimit: 10,
     host,
     user,
     password,
     database
-})
+}).promise();
 
-db.query = util.promisify(db.query);
+const db = {query: async (sql, values) => {
+    return (await pool.query(sql, values))[0]
+}}
+
 module.exports = db;
