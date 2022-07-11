@@ -1,8 +1,8 @@
 const jwt = require('jsonwebtoken');
 const db = require('../../config/database');
 var bcrypt = require('bcrypt');
-const {secret} = require('../../config/config');
-import {validarCurp, Fecha_actual, campos_incompletos} from '../funciones_js/validaciones';
+const { secret } = require('../../config/config');
+import { validarCurp, Fecha_actual, campos_incompletos, aplanar_respuesta, actualizar_password, existe_socio, catch_common_error, existe_pregunta } from '../funciones_js/validaciones';
 
 export const register = async (req, res, next) => {
     // Recoger los datos del body
@@ -25,38 +25,38 @@ export const register = async (req, res, next) => {
         CP: req.body.CP,
         Pais: req.body.Pais,
         Foto_perfil: req.body.Foto_perfil,
-        Username: req.body.Username,
-        Password: req.body.Password,
         Fecha_reg: Fecha_actual(),
+        Username: req.body.Username.toLowerCase(),
+        Password: req.body.Password,
     };
-    
+
     //campos incompletos
-    if(campos_incompletos(campos_usuario)){
-        res.status(400).json({code: 400, message: 'Campos incompletos'});
+    if (campos_incompletos(campos_usuario)) {
+        res.status(400).json({ code: 400, message: 'Campos incompletos' });
     }
-    
+
     //comprobar que el usuario no exista
     let query = "SELECT * FROM socios WHERE Username = ?";
     const rows = await db.query(query, [campos_usuario.Username]);
-    if(rows.length > 0){
+    if (rows.length > 0) {
         return res.status(400).json({ code: 400, message: 'El usuario ya existe' });
     }
 
     //comprobar que el curp sea valido
-    if(!validarCurp(campos_usuario.CURP)){
+    if (!validarCurp(campos_usuario.CURP)) {
         return res.status(400).json({ code: 400, message: 'El curp no es valido' });
     }
     //comprobar que el curp sea unico
     query = "SELECT * FROM socios WHERE CURP = ?";
     const curpsIguales = await db.query(query, [campos_usuario.CURP]);
-    if(curpsIguales.length > 0){
+    if (curpsIguales.length > 0) {
         return res.status(400).json({ code: 400, message: 'El curp ya existe' });
     }
 
     //comprobar que los campos esten completos
-    var BCRYPT_SALT_ROUNDS =12   //variable para indicar los saltos a bcrypt
-        bcrypt.hash(campos_usuario.Password, BCRYPT_SALT_ROUNDS)
-        .then(async function(hashedPassword){
+    var BCRYPT_SALT_ROUNDS = 12   //variable para indicar los saltos a bcrypt
+    bcrypt.hash(campos_usuario.Password, BCRYPT_SALT_ROUNDS)
+        .then(async function (hashedPassword) {
             campos_usuario.Password = hashedPassword;
 
             let query = "INSERT INTO socios SET ?";
@@ -66,24 +66,22 @@ export const register = async (req, res, next) => {
             console.log(result);
 
             //Preparando el Next:
-            const {Pregunta_id, Respuesta} = req.body;
+            const { Pregunta_id, Respuesta } = req.body;
             req.body = {
-                Socio_id : result.insertId,
-                Pregunta_id : Pregunta_id,
-                Respuesta : Respuesta,
+                Socio_id: result.insertId,
+                Pregunta_id: Pregunta_id,
+                Respuesta: Respuesta,
             };
 
-            console.log("Antes del next");
             next();
-            console.log("Despues del next");
         }
-            
+
         )
-        .catch(function(error){
-            res.status(500).json({code: 500, message:'Algo salio mal'});
+        .catch(function (error) {
+            res.status(500).json({ code: 500, message: 'Algo salio mal' });
         })
 
-        
+
     ///codigos de respuesta . . .
     //200: usuario autenticado
     //400: error del usuario
@@ -96,34 +94,34 @@ export const preguntas_seguridad_socio = async (req, res) => {
 
     console.log("Entro a preguntas");
     console.log(req.body);
-    
-    if(Socio_id && Pregunta_id && Respuesta){
+
+    if (Socio_id && Pregunta_id && Respuesta) {
         //comprobar que el usuario exista
         let query = "SELECT * FROM socios WHERE Socio_id = ?";
         const usuario = await db.query(query, [Socio_id]);
-        if(usuario.length == 0){
+        if (usuario.length == 0) {
             return res.status(400).json({ code: 400, message: 'El usuario no existe' });
         }
 
         //comprobar que la pregunta exista
         let query2 = "SELECT * FROM preguntas_seguridad WHERE preguntas_seguridad_id = ?";
         const pregunta = await db.query(query2, [Pregunta_id]);
-        if(pregunta.length == 0){
+        if (pregunta.length == 0) {
             return res.status(400).json({ code: 400, message: 'La pregunta no existe' });
         }
 
-        try{
+        try {
             let query3 = "INSERT INTO preguntas_socios (Socio_id, Pregunta_id, Respuesta) VALUES (?, ?, ?)";
             const reapuesta_hasheada = await bcrypt.hash(Respuesta, 12);
             const union = await db.query(query3, [Socio_id, Pregunta_id, reapuesta_hasheada]);
-            res.json({code: 200, message: 'Pregunta del socio agregada'}).status(200);
-        }catch{
-            res.status(500).json({code: 500, message:'Algo salio mal'});
+            res.json({ code: 200, message: 'Pregunta del socio agregada' }).status(200);
+        } catch {
+            res.status(500).json({ code: 500, message: 'Algo salio mal' });
         }
 
-    }else{
+    } else {
         //campos incompletos
-        res.status(400).json({code: 400, message: 'Campos incompletos'});
+        res.status(400).json({ code: 400, message: 'Campos incompletos' });
     }
 }
 
@@ -135,14 +133,14 @@ export const preguntas_seguridad_socio = async (req, res) => {
 //funcion para login
 export const login = async (req, res) => {
     const { Username, Password } = req.body;
-    if(Username && Password){
+    if (Username && Password) {
         let query = "SELECT * FROM socios WHERE Username = ?";
-        let result = await db.query(query, [Username]);
-        
+        let result = await db.query(query, [Username.toLowerCase()]);
+
         //validar que existe el usuario
-        if(result.length > 0){
+        if (result.length > 0) {
             //validar que la contraseña sea correcta
-            if(bcrypt.compareSync(Password, result[0].Password)){
+            if (bcrypt.compareSync(Password, result[0].Password)) {
                 //generar token
                 const token = jwt.sign({
                     Username: result[0].Username,
@@ -151,64 +149,60 @@ export const login = async (req, res) => {
 
                 //mandando token por el header
                 return res.status(200)
-                    .json({ code: 200, message: 'Usuario autenticado', token, data:{Socio_id: result[0].Socio_id, Username: result[0].Username} });
+                    .json({ code: 200, message: 'Usuario autenticado', token, data: { Socio_id: result[0].Socio_id, Username: result[0].Username } });
             }
-            else{
+            else {
                 return res.status(400).json({ code: 400, message: 'Contraseña incorrecta' });
             }
         }
-        else{
+        else {
             //usuario no existe
-            return res.status(400).json({code: 400, message: 'Usuario no existe'});
+            return res.status(400).json({ code: 400, message: 'Usuario no existe' });
         }
-    }else{
+    } else {
         //campos incompletos
-        res.status(400).json({code: 400, message: 'Campos incompletos'});
+        res.status(400).json({ code: 400, message: 'Campos incompletos' });
     }
-
-    //codigos de respuesta . . .
-    //200: usuario autenticado
-    //400: error del usuario
-    //500: error del servidor
 }
 
 
 //funcion para Recuperar Contraseña
-export const recuperar_ = async (req, res) => {
-    const { Username, Password } = req.body;
-    if(Username && Password){
-        let query = "SELECT * FROM socios WHERE Username = ?";
-        let result = await db.query(query, [Username]);
-        
-        //validar que existe el usuario
-        if(result.length > 0){
-            //validar que la contraseña sea correcta
-            if(bcrypt.compareSync(Password, result[0].Password)){
-                //generar token
-                const token = jwt.sign({
-                    Username: result[0].Username,
-                    Socio_id: result[0].Socio_id
-                }, secret);
+export const recuperar_password = (req, res) => {
+    const { Socio_id, Pregunta_id, Respuesta, Password } = req.body;
 
-                //mandando token por el header
-                return res.status(200)
-                    .json({ code: 200, message: 'Usuario autenticado', token, data:{Socio_id: result[0].Socio_id, Username: result[0].Username} });
-            }
-            else{
-                return res.status(400).json({ code: 400, message: 'Contraseña incorrecta' });
-            }
-        }
-        else{
-            //usuario no existe
-            return res.status(400).json({code: 400, message: 'Usuario no existe'});
-        }
-    }else{
-        //campos incompletos
-        res.status(400).json({code: 400, message: 'Campos incompletos'});
+    if (campos_incompletos({Socio_id, Pregunta_id, Respuesta, Password})) {
+        return res.status(400).json({ code: 400, message: "campos incompletos" });
     }
 
-    //codigos de respuesta . . .
-    //200: usuario autenticado
-    //400: error del usuario
-    //500: error del servidor
+    // Validaciones
+    Promise.all([existe_socio(Socio_id), existe_pregunta(Pregunta_id)])
+        .then(() => { // Si la informacion es valida
+            // Obtener la respuesta del socio
+            let query = "Select * from preguntas_socios where socio_id = ? and Pregunta_id = ?"
+            db.query(query, [Socio_id, Pregunta_id])
+                .then((preguntas_socios) => { // Si todo está bien, continuar
+                    if (preguntas_socios.length === 0) {
+                        return res.status(400).json({ code: 400, message: "Pregunta Incorrecta" });
+                    }
+
+                    // Verificar que la respuesta sea correcta
+                    if (!bcrypt.compareSync(aplanar_respuesta(Respuesta), preguntas_socios[0].Respuesta)) {
+                        return res.status(400).json({ code: 400, message: "Respuesta Incorrecta" });
+                    }
+
+                    //actualizar la contraseña
+                    actualizar_password(Socio_id, Password)
+                        .then(() => {
+                            return res.status(200).json({ code: 200, message: "Contraseña actualizada correctamente" });
+                        })
+                })
+                .catch(error => {
+                    const { message, code } = catch_common_error(error);
+                    return res.status(code).json({ code, message });
+                })
+        })
+        .catch(error => {
+            const { message, code } = catch_common_error(error);
+            return res.status(code).json({ code, message });
+        });
 }

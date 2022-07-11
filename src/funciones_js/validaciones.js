@@ -1,3 +1,4 @@
+import bcrypt from "bcrypt";
 const db = require('../../config/database');
 const random = require('string-random');
 
@@ -72,10 +73,10 @@ export const existe_socio = async (Socio_id) => {
 // Verificar que el socio esté en el grupo
 export const socio_en_grupo = async (Socio_id, Grupo_id) => {
     let query = "SELECT * FROM grupo_socio WHERE Socio_id = ? and Grupo_id = ? and Status = 1";
-    const socio = await db.query(query, [Socio_id, Grupo_id]);
+    const socio_grupo = await db.query(query, [Socio_id, Grupo_id]);
 
-    if (socio.length != 0) {
-        return socio[0];
+    if (socio_grupo.length != 0) {
+        return socio_grupo[0];
     }
 
     throw "El socio con id " + Socio_id + " no está en e grupo con el id " + Grupo_id;
@@ -123,4 +124,35 @@ export const obtener_acuerdo_actual = async (Grupo_id) => {
     }
 
     throw "No hay un acuerdo vigente para este grupo";
+}
+export function aplanar_respuesta(respuesta) {
+    return respuesta.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+}
+
+export const actualizar_password = async (Socio_id, Password) =>{
+    return (await db.query(
+        "Update Socios set password = ? where Socio_id = ?",
+        [bcrypt.hashSync(Password, 10), Socio_id]
+    ));
+}
+
+export const catch_common_error = (error) => {
+    if(typeof(error) === "string"){
+        return {message: error, code: 400};
+    }
+    
+    console.log(error);
+
+    return {message: "Error interno del servidor", code: 500};
+}
+
+export const existe_pregunta = async (Pregunta_id) => {
+    let query = "SELECT * FROM preguntas_seguridad WHERE preguntas_seguridad_id = ?";
+    const pregunta = await db.query(query, [Pregunta_id]);
+
+    if (pregunta.length != 0) {
+        return pregunta[0];
+    }
+
+    throw "No hay un pregunta vigente para este grupo";
 }
