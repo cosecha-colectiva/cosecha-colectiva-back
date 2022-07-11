@@ -1,4 +1,4 @@
-const { agregar_catalogo_transaccion, agregar_catalogo_preguntas_seguridad } = require('../controllers/transacciones_admin_control');
+const { agregar_catalogo_transaccion, agregar_catalogo_preguntas_seguridad } = require('../controllers/admin_control');
 
 const router = require('express').Router();
 
