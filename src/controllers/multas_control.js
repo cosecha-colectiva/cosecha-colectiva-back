@@ -15,7 +15,7 @@ const multas_control = {
             const { } = await existe_grupo(Grupo_id)
 
             const query = "SELECT * FROM multas WHERE Grupo_id = ? and Status = 0 order by Socio_id, Sesion_id";
-            const multas = await db.query(query, [Grupo_id]);
+            const [multas] = await db.query(query, [Grupo_id]);
 
             return res.json({ code: 200, message: 'Multas obtenidas', data: multas }).status(200);
         } catch (error) {
@@ -112,7 +112,7 @@ const multas_control = {
 
                 // crear Transaccion
                 let query = "INSERT INTO transacciones SET ?";
-                const resultadoTransaccion = await db.query(query, campos_transaccion);
+                const [resultadoTransaccion] = await db.query(query, campos_transaccion);
 
                 // Actualizar Status y Transaccion_id de multa
                 query = "UPDATE multas SET Status = 1, Transaccion_id = ? WHERE Multa_id = ?";
@@ -137,6 +137,19 @@ const multas_control = {
         }
 
         return res.json({ code: 200, message: 'Multas pagadas' }).status(200);
+
+        /* pool.get_connection(connection => {
+            connection.create_transaction(() => {
+                insertas primero
+                insertas segudo
+
+                si hay error: 
+                    connection.rollback();
+
+                si no:
+                    connection.commit();
+            })
+        }) */
     },
 }
 

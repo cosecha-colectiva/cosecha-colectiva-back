@@ -21,15 +21,18 @@ export const Fecha_actual = function () {
 
 export const generarCodigoValido = function(){
     return new Promise(async (resolve, reject) => {
+        let cont = 0;
         while(true){
             const rand = random(6, {letters: false});
             //comprobar que el codigo de grupo no exista
             let query = "SELECT * FROM grupos WHERE Codigo_grupo = ?";
-            const rows = await db.query(query, [rand])
+            const [rows] = await db.query(query, [rand])
 
             if(rows.length == 0){
-                resolve(rand);
+                return resolve(rand);
             }
+
+            if(cont++ >= 10) return resolve("-");
         }
     });
 }
@@ -49,7 +52,7 @@ export const campos_incompletos = (objeto) => {
 // Valida si el grupo existe en la BD
 export const existe_grupo = async (Grupo_id) => {
     let query = "SELECT * FROM grupos WHERE Codigo_grupo = ? or Grupo_id = ?";
-    const grupo = await db.query(query, [Grupo_id, Grupo_id]);
+    const [grupo] = await db.query(query, [Grupo_id, Grupo_id]);
 
     if (grupo.length != 0) {
         return grupo[0];
@@ -61,7 +64,7 @@ export const existe_grupo = async (Grupo_id) => {
 // Valida si el socio existe en la BD
 export const existe_socio = async (Socio_id) => {
     let query = "SELECT * FROM socios WHERE Socio_id = ?";
-    const socio = await db.query(query, [Socio_id]);
+    const [socio] = await db.query(query, [Socio_id]);
 
     if (socio.length != 0) {
         return socio[0];
@@ -73,7 +76,7 @@ export const existe_socio = async (Socio_id) => {
 // Verificar que el socio esté en el grupo
 export const socio_en_grupo = async (Socio_id, Grupo_id) => {
     let query = "SELECT * FROM grupo_socio WHERE Socio_id = ? and Grupo_id = ? and Status = 1";
-    const socio_grupo = await db.query(query, [Socio_id, Grupo_id]);
+    const [socio_grupo] = await db.query(query, [Socio_id, Grupo_id]);
 
     if (socio_grupo.length != 0) {
         return socio_grupo[0];
@@ -84,7 +87,7 @@ export const socio_en_grupo = async (Socio_id, Grupo_id) => {
 
 export const existe_sesion = async (Sesion_id) => {
     let query = "SELECT * FROM sesiones WHERE Sesion_id = ?";
-    const sesion = await db.query(query, [Sesion_id]);
+    const [sesion] = await db.query(query, [Sesion_id]);
 
     if (sesion.length != 0) {
         return sesion[0];
@@ -95,7 +98,7 @@ export const existe_sesion = async (Sesion_id) => {
 
 export const existe_multa = async (Multa_id) => {
     let query = "SELECT * FROM multas WHERE Multa_id = ?";
-    const multa = await db.query(query, [Multa_id]);
+    const [multa] = await db.query(query, [Multa_id]);
 
     if (multa.length != 0) {
         return multa[0];
@@ -106,7 +109,7 @@ export const existe_multa = async (Multa_id) => {
 
 export const existe_Acuerdo = async (Acuerdo_id) => {
     let query = "SELECT * FROM acuerdos WHERE Acuerdo_id = ?";
-    const acuerdo = await db.query(query, [Acuerdo_id]);
+    const [acuerdo] = await db.query(query, [Acuerdo_id]);
 
     if (acuerdo.length != 0) {
         return acuerdo[0];
@@ -117,7 +120,7 @@ export const existe_Acuerdo = async (Acuerdo_id) => {
 
 export const obtener_acuerdo_actual = async (Grupo_id) => {
     let query = "SELECT * FROM acuerdos WHERE Grupo_id = ? and Status = 1";
-    const acuerdo = await db.query(query, [Grupo_id]);
+    const [acuerdo] = await db.query(query, [Grupo_id]);
 
     if (acuerdo.length != 0) {
         return acuerdo[0];
@@ -140,6 +143,9 @@ export const catch_common_error = (error) => {
     if(typeof(error) === "string"){
         return {message: error, code: 400};
     }
+    else if(error.message !== undefined){
+        return error;
+    }
     
     console.log(error);
 
@@ -148,11 +154,44 @@ export const catch_common_error = (error) => {
 
 export const existe_pregunta = async (Pregunta_id) => {
     let query = "SELECT * FROM preguntas_seguridad WHERE preguntas_seguridad_id = ?";
-    const pregunta = await db.query(query, [Pregunta_id]);
+    const [pregunta] = await db.query(query, [Pregunta_id]);
 
     if (pregunta.length != 0) {
         return pregunta[0];
     }
 
-    throw "No hay un pregunta vigente para este grupo";
+    throw "No hay un pregunta con el id: " + Pregunta_id;
+}
+
+
+export const tiene_permiso = async (Socio_id, Grupo_id) => {
+    // relacion = obtener campo de la tabla "grupo_socio"
+    let query = "SELECT * FROM grupo_socio WHERE Socio_id = ? AND Grupo_id = ? LIMIT 1";
+    const [relacion] = await db.query(query, [Socio_id, Grupo_id]); // [[r1,r2,r3], fields]
+    // si relacion.tipo === "Admin"
+    if (relacion[0].Tipo_socio === "ADMIN"){
+        // return true
+        return true;
+    // si no, si relacion.tipo === "Suplente"
+    }
+    // else if (relacion.Tipo_socio === "SUPLENTE"){
+    //     // Validar que haya una sesion activa
+    //     // sesion_activa()
+
+
+    //     // obtener id del Admin
+    //     // obtener asistencias de la sesion actual
+    //     let query = "SELECT * FROM grupo_socio INNER JOIN asistencias ON grupo_socio.Socio_id = asistencias.Socio_id  WHERE grupo_socio.Tipo_socio = 'ADMIN' AND grupo_socio.Grupo_id = ? ORDER BY asistencias.Asistencia_id DESC LIMIT 1;"
+    //     const [admin] = await db.query(query, [Grupo_id]);
+        
+        
+    //     // Si el admin faltó
+    //     if(admin[0] !== undefined && admin[0].Presente!==1){
+    //         return true;
+    //     }
+
+
+    // }
+    
+    throw {code: 401, message: "El socio con el id: " + Socio_id + " no tiene permisos sobre el grupo con id: " + Grupo_id};
 }

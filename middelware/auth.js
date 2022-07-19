@@ -18,3 +18,7 @@ export const auth = (req, res, next) => {
         res.status(401).json({code: 401, message: 'No hay token'});
     }
 }
+
+export const authAdmin = (req, res, next) => {
+    next()
+}

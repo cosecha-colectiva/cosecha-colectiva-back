@@ -17,16 +17,21 @@ export const crear_grupo = async (req, res, next) => {
     };
 
     if (campos_incompletos(campos_grupo)) {
-        res.status(400).json({ code: 400, message: 'Campos incompletos' });
+        return res.status(400).json({ code: 400, message: 'Campos incompletos' });
+    }
+
+    if(campos_grupo.Codigo_grupo === "-"){
+        return res.status(500).json({ code: 500, message: 'Error interno del Servidor' });
     }
 
     try {
         let query = "INSERT INTO grupos SET ?";
-        const rows = await db.query(query, [campos_grupo]);
-        // return res.status(201).json({code: 201, message: "Grupo registrado correctamente" });
+        await db.query(query, [campos_grupo]);
 
         req.body.Socio_id = id_socio_actual;
         req.body.Codigo_grupo = campos_grupo.Codigo_grupo;
+
+        console.log("entrando al next");
         next();
     } catch (error) {
         return res.status(500).json({ code: 500, message: 'Error en el servidor' });
@@ -40,9 +45,10 @@ export const agregar_socio = async (req, res) => {
         return res.status(400).json({ code: 400, message: "Campos incompletos" });
     }
 
+    console.log("Agregando socio a grupo...");
     try{
         let query = "CALL agregar_socio_grupo(?, ?)";
-        const {Message, Error} = (await db.query(query, [Socio_id, Codigo_grupo]))[0][0];
+        const {Message, Error} = (await db.query(query, [Socio_id, Codigo_grupo]))[0][0][0];
 
         if(Error){
             return res.status(400).json({ code: 400, message: Error })

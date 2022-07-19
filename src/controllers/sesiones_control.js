@@ -1,4 +1,4 @@
-import { campos_incompletos, existe_grupo, existe_sesion, existe_socio, Fecha_actual, socio_en_grupo } from "../funciones_js/validaciones";
+import { campos_incompletos, existe_grupo, existe_sesion, existe_socio, Fecha_actual, socio_en_grupo, tiene_permiso, catch_common_error } from "../funciones_js/validaciones";
 
 const db = require("../../config/database");
 
@@ -7,34 +7,39 @@ export const crear_sesion = async (req, res) => {
     const campos_sesion = {
         Fecha: Fecha_actual(),
         Grupo_id: req.body.Grupo_id,
-        Caja: null
+        Caja: null,
+        Acciones: null
     }
 
     if (campos_incompletos(campos_sesion)) {
         res.json({ code: 400, message: 'No se envio el id del grupo' }).status(400);
     }
 
+    
+
     try {
+        await tiene_permiso(req.id_socio_actual, campos_sesion.Grupo_id);
         //VERIFICAR QUE EXISTE EL GRUPO
         const grupo = await existe_grupo(campos_sesion.Grupo_id);
 
         // obtener caja final de la sesion anterior
-        let query = "SELECT Caja FROM sesiones WHERE Grupo_id = ? ORDER BY Fecha desc, Sesion_id desc LIMIT 1";
-        const sesiones = await db.query(query, [grupo.Grupo_id]);
+        let query = "SELECT Caja, Acciones FROM sesiones WHERE Grupo_id = ? ORDER BY Fecha desc, Sesion_id desc LIMIT 1";
+        const [sesiones] = await db.query(query, [grupo.Grupo_id]);
         campos_sesion.Caja = sesiones[0] ? sesiones[0].Caja : 0;
+        campos_sesion.Acciones = sesiones[0] ? sesiones[0].Acciones : 0;
+        
+        // desactivar todas las sesiones que puedan estar activas para ese grupo
+        query = "Update sesiones set Activa = 0 where Grupo_id = ?";
+        await db.query(query, campos_sesion.Grupo_id);
 
+        // crear la nueva sesion
         query = "INSERT INTO sesiones SET ?";
         await db.query(query, campos_sesion);
 
         return res.json({ code: 200, message: 'Sesion creada' }).status(200);
     } catch (error) {
-        if (typeof (error) == "string") {
-            // enviar mensaje de error
-            return res.status(400).json({ code: 400, message: error });
-        }
-
-        console.log(error);
-        return res.status(500).json({ code: 500, message: 'Error en el servidor' });
+        const {code, message} = catch_common_error(error);
+        return res.json({ code, message }).status(code);
     }
 }
 
@@ -47,6 +52,8 @@ export const registrar_asistencias = async (req, res) => {
     if (!Sesion_id || !Socios) {
         return res.json({ code: 400, message: 'Campos incompletos' }).status(400);
     }
+
+    // await tiene_permiso(req.id_socio_actual, Sesion_id.Grupo_id);
 
     //registrar asistencias
     const asistencias_con_error = [];
@@ -99,7 +106,7 @@ export const enviar_inasistencias_sesion = async (req, res) => {
     //buscar los registros con el id de la sesion y de los socios
     try {
         let query = "CALL obtener_inasistencias_sesion(?)";
-        const inasistencias = (await db.query(query, [Sesion_id]))[0];
+        const [inasistencias] = (await db.query(query, [Sesion_id]))[0];
         return res.json({ code: 200, message: 'Inasistencias obtenidos', data: inasistencias }).status(200);
     } catch (err) {
         return res.json({ code: 500, message: 'Error al obtener inasistencias' }).status(500);

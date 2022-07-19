@@ -37,7 +37,7 @@ export const register = async (req, res, next) => {
 
     //comprobar que el usuario no exista
     let query = "SELECT * FROM socios WHERE Username = ?";
-    const rows = await db.query(query, [campos_usuario.Username]);
+    const [rows] = await db.query(query, [campos_usuario.Username]);
     if (rows.length > 0) {
         return res.status(400).json({ code: 400, message: 'El usuario ya existe' });
     }
@@ -48,7 +48,7 @@ export const register = async (req, res, next) => {
     }
     //comprobar que el curp sea unico
     query = "SELECT * FROM socios WHERE CURP = ?";
-    const curpsIguales = await db.query(query, [campos_usuario.CURP]);
+    const [curpsIguales] = await db.query(query, [campos_usuario.CURP]);
     if (curpsIguales.length > 0) {
         return res.status(400).json({ code: 400, message: 'El curp ya existe' });
     }
@@ -60,7 +60,7 @@ export const register = async (req, res, next) => {
             campos_usuario.Password = hashedPassword;
 
             let query = "INSERT INTO socios SET ?";
-            const result = await db.query(query, campos_usuario);
+            const [result] = await db.query(query, campos_usuario);
 
             // res.json({code: 200, message: 'Usuario guardado'}).status(200);
             console.log(result);
@@ -92,36 +92,34 @@ export const register = async (req, res, next) => {
 export const preguntas_seguridad_socio = async (req, res) => {
     const { Socio_id, Pregunta_id, Respuesta } = req.body;
 
-    console.log("Entro a preguntas");
-    console.log(req.body);
+    if(campos_incompletos({Socio_id, Pregunta_id, Respuesta})){
+        return res.status(400).json({ code: 400, message: 'Campos incompletos' });
+    }
 
-    if (Socio_id && Pregunta_id && Respuesta) {
-        //comprobar que el usuario exista
-        let query = "SELECT * FROM socios WHERE Socio_id = ?";
-        const usuario = await db.query(query, [Socio_id]);
-        if (usuario.length == 0) {
-            return res.status(400).json({ code: 400, message: 'El usuario no existe' });
+    try {
+        // Validaciones
+        await existe_socio(Socio_id);
+        await existe_pregunta(Pregunta_id);
+
+        // Obtener la respuesta del socio
+        let query = "Select * from preguntas_socios where socio_id = ?"
+        const [preguntas_socios] = await db.query(query, [Socio_id, Pregunta_id])
+
+        if (preguntas_socios.length === 0) {
+            query = "INSERT INTO preguntas_socios (Socio_id, Pregunta_id, Respuesta) VALUES (?, ?, ?)";
+            await db.query(query, [Socio_id, Pregunta_id, bcrypt.hashSync(Respuesta, 10)]);
+            
+            return res.json({ code: 200, message: 'Pregunta del socio agregada' }).status(200);
+        } else {
+            query = "UPDATE preguntas_socios SET ? where socio_id = ?";
+            await db.query(query, [{Socio_id, Pregunta_id, Respuesta: bcrypt.hashSync(Respuesta, 10)}, Socio_id]);
+            
+            return res.json({ code: 200, message: 'Pregunta del socio Actualizada' }).status(200);
         }
-
-        //comprobar que la pregunta exista
-        let query2 = "SELECT * FROM preguntas_seguridad WHERE preguntas_seguridad_id = ?";
-        const pregunta = await db.query(query2, [Pregunta_id]);
-        if (pregunta.length == 0) {
-            return res.status(400).json({ code: 400, message: 'La pregunta no existe' });
-        }
-
-        try {
-            let query3 = "INSERT INTO preguntas_socios (Socio_id, Pregunta_id, Respuesta) VALUES (?, ?, ?)";
-            const reapuesta_hasheada = await bcrypt.hash(Respuesta, 12);
-            const union = await db.query(query3, [Socio_id, Pregunta_id, reapuesta_hasheada]);
-            res.json({ code: 200, message: 'Pregunta del socio agregada' }).status(200);
-        } catch {
-            res.status(500).json({ code: 500, message: 'Algo salio mal' });
-        }
-
-    } else {
-        //campos incompletos
-        res.status(400).json({ code: 400, message: 'Campos incompletos' });
+        
+    } catch(error) {
+        const {message, code} = catch_common_error(error);
+        return res.json({code, message}).status(code);
     }
 }
 
@@ -135,7 +133,7 @@ export const login = async (req, res) => {
     const { Username, Password } = req.body;
     if (Username && Password) {
         let query = "SELECT * FROM socios WHERE Username = ?";
-        let result = await db.query(query, [Username.toLowerCase()]);
+        let [result] = await db.query(query, [Username.toLowerCase()]);
 
         //validar que existe el usuario
         if (result.length > 0) {
@@ -176,33 +174,40 @@ export const recuperar_password = (req, res) => {
 
     // Validaciones
     Promise.all([existe_socio(Socio_id), existe_pregunta(Pregunta_id)])
-        .then(() => { // Si la informacion es valida
+        .then(async () => { // Si la informacion es valida
             // Obtener la respuesta del socio
             let query = "Select * from preguntas_socios where socio_id = ? and Pregunta_id = ?"
-            db.query(query, [Socio_id, Pregunta_id])
-                .then((preguntas_socios) => { // Si todo está bien, continuar
-                    if (preguntas_socios.length === 0) {
-                        return res.status(400).json({ code: 400, message: "Pregunta Incorrecta" });
-                    }
+            const [preguntas_socios] = await db.query(query, [Socio_id, Pregunta_id])
 
-                    // Verificar que la respuesta sea correcta
-                    if (!bcrypt.compareSync(aplanar_respuesta(Respuesta), preguntas_socios[0].Respuesta)) {
-                        return res.status(400).json({ code: 400, message: "Respuesta Incorrecta" });
-                    }
+            if (preguntas_socios.length === 0) {
+                return res.status(400).json({ code: 400, message: "Pregunta Incorrecta" });
+            }
 
-                    //actualizar la contraseña
-                    actualizar_password(Socio_id, Password)
-                        .then(() => {
-                            return res.status(200).json({ code: 200, message: "Contraseña actualizada correctamente" });
-                        })
-                })
-                .catch(error => {
-                    const { message, code } = catch_common_error(error);
-                    return res.status(code).json({ code, message });
-                })
+            // Verificar que la respuesta sea correcta
+            if (!bcrypt.compareSync(aplanar_respuesta(Respuesta), preguntas_socios[0].Respuesta)) {
+                return res.status(400).json({ code: 400, message: "Respuesta Incorrecta" });
+            }
+
+            //actualizar la contraseña
+            actualizar_password(Socio_id, Password)
+            return res.status(200).json({ code: 200, message: "Contraseña actualizada correctamente" });
         })
         .catch(error => {
             const { message, code } = catch_common_error(error);
             return res.status(code).json({ code, message });
         });
+    /* 
+    
+    Prommise.all([promesa1, promesa2, promesa3])
+        .then(([res1, res2, res3]) => {
+            console.log(res1);
+        })
+        .catch((error) => {
+            console.log(error);
+        })
+
+    SumaAsync(n1,n2)
+        .then((result) => {console.log(result);})
+
+    */
 }

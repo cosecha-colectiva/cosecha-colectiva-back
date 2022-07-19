@@ -8,11 +8,11 @@ const admin_control = {
         const { Catalogo_id, Tipo } = req.body;
         if(Catalogo_id && Tipo){
             let consulta = "SELECT * FROM catalogo_transacciones WHERE Catalogo_id = ?";
-            const resultado = await db.query(consulta, [Catalogo_id]);
+            const [resultado] = await db.query(consulta, [Catalogo_id]);
             if(resultado.length == 0){
                 try{
                     const query = "INSERT INTO catalogo_transacciones (Catalogo_id, Tipo) VALUES (?, ?)";
-                    db.query(query, [Catalogo_id, Tipo]);
+                    await db.query(query, [Catalogo_id, Tipo]);
                     return res.json({ code: 200, message: 'Nuevo tipo de transaccion agregado' }).status(200);
                 }catch(err){
                     console.log(err);
@@ -31,11 +31,11 @@ const admin_control = {
         const { Pregunta } = req.body;
         if(Pregunta){
             let consulta = "SELECT * FROM preguntas_seguridad WHERE Pregunta = ?";
-            const resultado = await db.query(consulta, [Pregunta]);
+            const [resultado] = await db.query(consulta, [Pregunta]);
             if(resultado.length == 0){
                 try{
                     const query = "INSERT INTO preguntas_seguridad (Pregunta) VALUES (?)";
-                    db.query(query, [Pregunta]);
+                    await db.query(query, [Pregunta]);
                     return res.json({ code: 200, message: 'Nueva pregunta agregada' }).status(200);
                 }catch(err){
                     console.log(err);
