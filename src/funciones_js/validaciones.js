@@ -14,33 +14,33 @@ export const validarCurp = function (curp) {
 export const Fecha_actual = function () {
     var now = new Date();
     var year = now.getFullYear();
-    var month = now.getMonth()+1;
+    var month = now.getMonth() + 1;
     var day = now.getDate();
     return year + '-' + month + '-' + day;
 }
 
-export const generarCodigoValido = function(){
+export const generarCodigoValido = function () {
     return new Promise(async (resolve, reject) => {
         let cont = 0;
-        while(true){
-            const rand = random(6, {letters: false});
+        while (true) {
+            const rand = random(6, { letters: false });
             //comprobar que el codigo de grupo no exista
             let query = "SELECT * FROM grupos WHERE Codigo_grupo = ?";
             const [rows] = await db.query(query, [rand])
 
-            if(rows.length == 0){
+            if (rows.length == 0) {
                 return resolve(rand);
             }
 
-            if(cont++ >= 10) return resolve("-");
+            if (cont++ >= 10) return resolve("-");
         }
     });
 }
 
 // Funcion para saber si un json tiene campos como undefined
 export const campos_incompletos = (objeto) => {
-    for(let key in objeto){
-        if(objeto[key] === undefined){
+    for (let key in objeto) {
+        if (objeto[key] === undefined) {
             console.log(key);
             return true;
         }
@@ -57,7 +57,7 @@ export const existe_grupo = async (Grupo_id) => {
     if (grupo.length != 0) {
         return grupo[0];
     }
-    
+
     throw "No existe el Grupo con el Id: " + Grupo_id;
 };
 
@@ -132,7 +132,7 @@ export function aplanar_respuesta(respuesta) {
     return respuesta.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 }
 
-export const actualizar_password = async (Socio_id, Password) =>{
+export const actualizar_password = async (Socio_id, Password) => {
     return (await db.query(
         "Update Socios set password = ? where Socio_id = ?",
         [bcrypt.hashSync(Password, 10), Socio_id]
@@ -140,16 +140,13 @@ export const actualizar_password = async (Socio_id, Password) =>{
 }
 
 export const catch_common_error = (error) => {
-    if(typeof(error) === "string"){
-        return {message: error, code: 400};
-    }
-    else if(error.message !== undefined){
+    if ("code" in error && "message" in error && typeof(error["code"]) === "number") {
         return error;
+    } else if(typeof(error) === "string"){
+        return {code: 400, message: error};
     }
-    
-    console.log(error);
 
-    return {message: "Error interno del servidor", code: 500};
+    return { message: "Error interno del servidor", code: 500 };
 }
 
 export const existe_pregunta = async (Pregunta_id) => {
@@ -160,7 +157,7 @@ export const existe_pregunta = async (Pregunta_id) => {
         return pregunta[0];
     }
 
-    throw "No hay un pregunta con el id: " + Pregunta_id;
+    throw "No hay un pregunta con el id: " + Pregunta_id ;
 }
 
 
@@ -169,10 +166,10 @@ export const tiene_permiso = async (Socio_id, Grupo_id) => {
     let query = "SELECT * FROM grupo_socio WHERE Socio_id = ? AND Grupo_id = ? LIMIT 1";
     const [relacion] = await db.query(query, [Socio_id, Grupo_id]); // [[r1,r2,r3], fields]
     // si relacion.tipo === "Admin"
-    if (relacion[0].Tipo_socio === "ADMIN"){
+    if (relacion[0].Tipo_socio === "ADMIN") {
         // return true
         return true;
-    // si no, si relacion.tipo === "Suplente"
+        // si no, si relacion.tipo === "Suplente"
     }
     // else if (relacion.Tipo_socio === "SUPLENTE"){
     //     // Validar que haya una sesion activa
@@ -183,8 +180,8 @@ export const tiene_permiso = async (Socio_id, Grupo_id) => {
     //     // obtener asistencias de la sesion actual
     //     let query = "SELECT * FROM grupo_socio INNER JOIN asistencias ON grupo_socio.Socio_id = asistencias.Socio_id  WHERE grupo_socio.Tipo_socio = 'ADMIN' AND grupo_socio.Grupo_id = ? ORDER BY asistencias.Asistencia_id DESC LIMIT 1;"
     //     const [admin] = await db.query(query, [Grupo_id]);
-        
-        
+
+
     //     // Si el admin faltó
     //     if(admin[0] !== undefined && admin[0].Presente!==1){
     //         return true;
@@ -192,14 +189,51 @@ export const tiene_permiso = async (Socio_id, Grupo_id) => {
 
 
     // }
-    
-    throw {code: 401, message: "El socio con el id: " + Socio_id + " no tiene permisos sobre el grupo con id: " + Grupo_id};
+
+    throw { code: 401, message: "El socio con el id: " + Socio_id + " no tiene permisos sobre el grupo con id: " + Grupo_id };
 }
 
 export const prestamos_multiples = async (Grupo_id, lista_socios) => {
     let query = "SELECT Ampliacion_prestamos FROM acuerdos WHERE Grupo_id = ? AND Status = 1";
-    const [bool_ampliacion] = await db.query(query, [Socio_id, Grupo_id]);
-    if(bool_ampliacion === 0){
-        
+    const [bool_ampliacion] = await db.query(query, [Grupo_id]);
+    //Verificar si se permiten prestamos multiples
+    if (bool_ampliacion === 0) {
+        //si no se permiten, entonces asegurarse que no tengan ya un prestamo activo
+        for (let socio in lista_socios) {
+            await socio_en_grupo(socio.Socio_id, socio.Grupo_id)
+
+        }
+    }else{
+        //si si se permiten, entonces asegurarse que no haya excedido su limite de credito
     }
+}
+
+
+export const validar_password = async (Socio_id, Password) => {
+    let query = "SELECT * FROM socios WHERE Socio_id = ?";
+        let [result] = await db.query(query, [Username.toLowerCase()]);
+
+        //validar que existe el usuario
+        if (result.length > 0) {
+            //validar que la contraseña sea correcta
+            if (bcrypt.compareSync(Password, result[0].Password)) {
+                return true;
+            }
+            else{
+                return false
+            }
+        }else{
+            return false
+        }
+}
+
+export const obtener_sesion_activa = async (Grupo_id) => {
+    let query = "SELECT * FROM sesiones WHERE sesiones.Activa = TRUE AND sesiones.Grupo_id = ? ORDER BY sesiones.Sesion_id DESC LIMIT 1";
+    const [sesiones] = await db.query(query, Grupo_id);
+
+    if(sesiones.length > 0){
+        return sesiones[0];
+    }
+
+    throw "No hay una sesion en curso para el grupo " + Grupo_id;
 }

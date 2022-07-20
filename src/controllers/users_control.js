@@ -2,7 +2,7 @@ const jwt = require('jsonwebtoken');
 const db = require('../../config/database');
 var bcrypt = require('bcrypt');
 const { secret } = require('../../config/config');
-import { validarCurp, Fecha_actual, campos_incompletos, aplanar_respuesta, actualizar_password, existe_socio, catch_common_error, existe_pregunta } from '../funciones_js/validaciones';
+import { validarCurp, Fecha_actual, campos_incompletos, actualizar_password, existe_socio, catch_common_error, existe_pregunta, aplanar_respuesta } from '../funciones_js/validaciones';
 
 export const register = async (req, res, next) => {
     // Recoger los datos del body
@@ -69,6 +69,7 @@ export const register = async (req, res, next) => {
             const { Pregunta_id, Respuesta } = req.body;
             req.body = {
                 Socio_id: result.insertId,
+                Password: campos_usuario.Password,
                 Pregunta_id: Pregunta_id,
                 Respuesta: Respuesta,
             };
@@ -90,41 +91,47 @@ export const register = async (req, res, next) => {
 
 //Funcion para agregar o modificar pregunta de seguridad del socio
 export const preguntas_seguridad_socio = async (req, res) => {
-    // if(req.id_socio_actual){
-
-    // }else{
-
-    // }
-    const { Socio_id, Pregunta_id, Respuesta } = req.body;
-
-    if(campos_incompletos({Socio_id, Pregunta_id, Respuesta})){
-        return res.status(400).json({ code: 400, message: 'Campos incompletos' });
-    }
+    const { Pregunta_id, Password } = req.body;
+    const Respuesta = req.body.Respuesta ? aplanar_respuesta(req.body.Respuesta) : undefined;
+    const { id_socio_actual } = req;
+    const Socio_id = id_socio_actual || req.body.Socio_id;
 
     try {
         // Validaciones
         await existe_socio(Socio_id);
         await existe_pregunta(Pregunta_id);
 
+        if (campos_incompletos({ Socio_id, Pregunta_id, Respuesta })) {
+            return res.status(400).json({ code: 400, message: 'Campos incompletos' });
+        }
+
         // Obtener la respuesta del socio
         let query = "Select * from preguntas_socios where socio_id = ?"
         const [preguntas_socios] = await db.query(query, [Socio_id, Pregunta_id])
 
-        if (preguntas_socios.length === 0) {
-            query = "INSERT INTO preguntas_socios (Socio_id, Pregunta_id, Respuesta) VALUES (?, ?, ?)";
-            await db.query(query, [Socio_id, Pregunta_id, bcrypt.hashSync(Respuesta, 10)]);
-            
-            return res.json({ code: 200, message: 'Pregunta del socio agregada' }).status(200);
-        } else {
-            query = "UPDATE preguntas_socios SET ? where socio_id = ?";
-            await db.query(query, [{Socio_id, Pregunta_id, Respuesta: bcrypt.hashSync(Respuesta, 10)}, Socio_id]);
-            
-            return res.json({ code: 200, message: 'Pregunta del socio Actualizada' }).status(200);
+        if (validar_password(Socio_id, Password)) {
+            if (id_socio_actual && preguntas_socios.length !== 0) {
+                query = "UPDATE preguntas_socios SET ? where socio_id = ?";
+                await db.query(query, [{ Socio_id: id_socio_actual, Pregunta_id, Respuesta: bcrypt.hashSync(Respuesta, 10) }, Socio_id]);
+                return res.json({ code: 200, message: 'Pregunta del socio Actualizada' }).status(200);
+            } else {
+                if (preguntas_socios.length === 0) {
+                    query = "INSERT INTO preguntas_socios (Socio_id, Pregunta_id, Respuesta) VALUES (?, ?, ?)";
+                    await db.query(query, [Socio_id, Pregunta_id, bcrypt.hashSync(Respuesta, 10)]);
+                    return res.json({ code: 200, message: 'Pregunta del socio agregada' }).status(200);
+                }
+                else {
+                    return res.json({ code: 500, message: 'Error interno del servidor' }).status(500);
+                }
+            }
         }
-        
-    } catch(error) {
-        const {message, code} = catch_common_error(error);
-        return res.json({code, message}).status(code);
+        else {
+            return res.json({ code: 400, message: 'El password es incorrecto' }).status(400);
+        }
+
+    } catch (error) {
+        const { message, code } = catch_common_error(error);
+        return res.json({ code, message }).status(code);
     }
 }
 
@@ -173,7 +180,7 @@ export const login = async (req, res) => {
 export const recuperar_password = (req, res) => {
     const { Socio_id, Pregunta_id, Respuesta, Password } = req.body;
 
-    if (campos_incompletos({Socio_id, Pregunta_id, Respuesta, Password})) {
+    if (campos_incompletos({ Socio_id, Pregunta_id, Respuesta, Password })) {
         return res.status(400).json({ code: 400, message: "campos incompletos" });
     }
 
