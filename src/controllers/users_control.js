@@ -90,6 +90,11 @@ export const register = async (req, res, next) => {
 
 //Funcion para agregar o modificar pregunta de seguridad del socio
 export const preguntas_seguridad_socio = async (req, res) => {
+    // if(req.id_socio_actual){
+
+    // }else{
+
+    // }
     const { Socio_id, Pregunta_id, Respuesta } = req.body;
 
     if(campos_incompletos({Socio_id, Pregunta_id, Respuesta})){

@@ -13,6 +13,9 @@ const multas_control = {
         try {
             // Verificar que el grupo existe
             const { } = await existe_grupo(Grupo_id)
+            // verificar que el socio tiene permiso
+            await tiene_permiso(req.body.id_socio_actual, Grupo_id);
+
 
             const query = "SELECT * FROM multas WHERE Grupo_id = ? and Status = 0 order by Socio_id, Sesion_id";
             const [multas] = await db.query(query, [Grupo_id]);
@@ -52,6 +55,10 @@ const multas_control = {
             // Obtener el grupo (por medio de la sesion)
             const grupo = await existe_grupo(sesion.Grupo_id)
 
+            // verificar que el socio tiene permiso
+            await tiene_permiso(req.body.id_socio_actual, grupo);
+
+
             //FALTA VALIDAR QUE EL USUARIO PERTENEZCA A ESE GRUPO
             const { } = await socio_en_grupo(campos_multa.Socio_id, grupo.Grupo_id)
 
@@ -79,6 +86,14 @@ const multas_control = {
             return res.json({ code: 400, message: 'Campos incompletos' }).status(400);
         }
 
+        // Verificar que existe la sesion Actual
+        const sesion = await existe_sesion(Sesion_id);
+        // verificar que el socio tiene permiso
+        await tiene_permiso(req.body.id_socio_actual, sesion.Grupo_id);
+
+        // obtener id del acuerdo actual
+        const acuerdo = await obtener_acuerdo_actual(sesion.Grupo_id);
+
 
         let multas_con_error = [];
 
@@ -93,12 +108,6 @@ const multas_control = {
                 if (multa.Status != 0) {
                     throw "La multa ya está pagada";
                 }
-
-                // Verificar que existe la sesion Actual
-                const sesion = await existe_sesion(Sesion_id);
-
-                // obtener id del acuerdo actual
-                const acuerdo = await obtener_acuerdo_actual(sesion.Grupo_id);
 
                 // establecer campos de la transaccion
                 const campos_transaccion = {

@@ -195,3 +195,11 @@ export const tiene_permiso = async (Socio_id, Grupo_id) => {
     
     throw {code: 401, message: "El socio con el id: " + Socio_id + " no tiene permisos sobre el grupo con id: " + Grupo_id};
 }
+
+export const prestamos_multiples = async (Grupo_id, lista_socios) => {
+    let query = "SELECT Ampliacion_prestamos FROM acuerdos WHERE Grupo_id = ? AND Status = 1";
+    const [bool_ampliacion] = await db.query(query, [Socio_id, Grupo_id]);
+    if(bool_ampliacion === 0){
+        
+    }
+}

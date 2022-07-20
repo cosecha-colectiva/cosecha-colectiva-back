@@ -53,15 +53,15 @@ export const registrar_asistencias = async (req, res) => {
         return res.json({ code: 400, message: 'Campos incompletos' }).status(400);
     }
 
-    // await tiene_permiso(req.id_socio_actual, Sesion_id.Grupo_id);
+    // VERIFICACIONES
+            // Verificar que la sesion existe
+            const sesion = await existe_sesion(Sesion_id);
+            await tiene_permiso(req.id_socio_actual, sesion.Grupo_id);
 
     //registrar asistencias
     const asistencias_con_error = [];
     for (let i = 0; i < Socios.length; i++) {
         try {
-            // VERIFICACIONES
-            // Verificar que la sesion existe
-            const sesion = await existe_sesion(Sesion_id);
             // Verificar que el socio existe
             const socio = await existe_socio(Socios[i].Socio_id);
             // Verificar que el socio pertenezca al grupo
@@ -96,9 +96,10 @@ export const enviar_inasistencias_sesion = async (req, res) => {
         return res.json({ code: 400, message: 'Campos incompletos' }).status(400);
     }
 
-    // Validar si la sesion existe
+    // Validar si la sesion existe y tiene permiso
     try {
-        await existe_sesion(Sesion_id);
+        const sesion = await existe_sesion(Sesion_id);
+        await tiene_permiso(req.id_socio_actual, sesion.Grupo_id);
     } catch (error) {
         return res.json({ code: 400, message: 'No hay una sesion con ese Id' }).status(400);
     }
@@ -124,6 +125,11 @@ export const registrar_retardos = async (req, res) => {
         // campos incompletos
         return res.json({ code: 400, message: 'Campos incompletos' }).status(400);
     }
+
+     // VERIFICACIONES
+        // Verificar que la sesion existe
+        const sesion = await existe_sesion(Sesion_id);
+        await tiene_permiso(req.id_socio_actual, sesion.Grupo_id);
 
     //registrar Retardos
     const retardos_con_error = [];
