@@ -4,6 +4,7 @@ import { campos_incompletos, Fecha_actual, generarCodigoValido, existe_grupo, ex
 // Funcion para creacion de grupos
 export const crear_grupo = async (req, res, next) => {
     const id_socio_actual = req.id_socio_actual;
+
     // Recoger los datos del body
     const campos_grupo = {
         Nombre_grupo: req.body.Nombre_grupo,
@@ -20,7 +21,7 @@ export const crear_grupo = async (req, res, next) => {
         return res.status(400).json({ code: 400, message: 'Campos incompletos' });
     }
 
-    if(campos_grupo.Codigo_grupo === "-"){
+    if (campos_grupo.Codigo_grupo === "-") {
         return res.status(500).json({ code: 500, message: 'Error interno del Servidor' });
     }
 
@@ -31,7 +32,6 @@ export const crear_grupo = async (req, res, next) => {
         req.body.Socio_id = id_socio_actual;
         req.body.Codigo_grupo = campos_grupo.Codigo_grupo;
 
-        console.log("entrando al next");
         next();
     } catch (error) {
         return res.status(500).json({ code: 500, message: 'Error en el servidor' });
@@ -39,23 +39,25 @@ export const crear_grupo = async (req, res, next) => {
 }
 
 export const agregar_socio = async (req, res) => {
-    const { Socio_id, Codigo_grupo } = req.body;
+    // agregar_socio, agrega al socio que ejecuta la peticion (el socio actual)
+    // si se dá un Socio_id por el req.body, se agregará ese socio al grupo
+    const Socio_id  = req.id_socio_actual || req.body.Socio_id;
+    const { Codigo_grupo } = req.body;
 
-    if(!Socio_id || !Codigo_grupo){
+    if (campos_incompletos({Socio_id, Codigo_grupo})) {
         return res.status(400).json({ code: 400, message: "Campos incompletos" });
     }
 
-    console.log("Agregando socio a grupo...");
-    try{
+    try {
         let query = "CALL agregar_socio_grupo(?, ?)";
-        const {Message, Error} = (await db.query(query, [Socio_id, Codigo_grupo]))[0][0][0];
+        const { Message, Error } = (await db.query(query, [Socio_id, Codigo_grupo]))[0][0][0];
 
-        if(Error){
+        if (Error) {
             return res.status(400).json({ code: 400, message: Error })
         }
 
         return res.status(200).json({ code: 200, message: Message });
-    } catch (error){
+    } catch (error) {
         return res.status(500).json({ code: 500, message: 'Error en el servidor' });
     }
 

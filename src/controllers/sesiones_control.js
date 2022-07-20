@@ -1,4 +1,4 @@
-import { campos_incompletos, existe_grupo, existe_sesion, existe_socio, Fecha_actual, socio_en_grupo, tiene_permiso, catch_common_error } from "../funciones_js/validaciones";
+import { campos_incompletos, existe_grupo, existe_sesion, existe_socio, Fecha_actual, socio_en_grupo, tiene_permiso, catch_common_error, obtener_sesion_activa } from "../funciones_js/validaciones";
 
 const db = require("../../config/database");
 
@@ -15,19 +15,19 @@ export const crear_sesion = async (req, res) => {
         res.json({ code: 400, message: 'No se envio el id del grupo' }).status(400);
     }
 
-    
-
     try {
-        await tiene_permiso(req.id_socio_actual, campos_sesion.Grupo_id);
         //VERIFICAR QUE EXISTE EL GRUPO
         const grupo = await existe_grupo(campos_sesion.Grupo_id);
+
+        // Verificar que el socio tiene permiso sobre el grupo
+        await tiene_permiso(req.id_socio_actual, campos_sesion.Grupo_id);
 
         // obtener caja final de la sesion anterior
         let query = "SELECT Caja, Acciones FROM sesiones WHERE Grupo_id = ? ORDER BY Fecha desc, Sesion_id desc LIMIT 1";
         const [sesiones] = await db.query(query, [grupo.Grupo_id]);
         campos_sesion.Caja = sesiones[0] ? sesiones[0].Caja : 0;
         campos_sesion.Acciones = sesiones[0] ? sesiones[0].Acciones : 0;
-        
+
         // desactivar todas las sesiones que puedan estar activas para ese grupo
         query = "Update sesiones set Activa = 0 where Grupo_id = ?";
         await db.query(query, campos_sesion.Grupo_id);
@@ -38,79 +38,80 @@ export const crear_sesion = async (req, res) => {
 
         return res.json({ code: 200, message: 'Sesion creada' }).status(200);
     } catch (error) {
-        const {code, message} = catch_common_error(error);
+        const { code, message } = catch_common_error(error);
         return res.json({ code, message }).status(code);
     }
 }
 
 // registrar asistencias de un grupo
-//recibe el id de la sesion y un array de json con {Socio_id, Presente}
+//recibe el id del grupo y un array de json con {Socio_id, Presente}
 export const registrar_asistencias = async (req, res) => {
-    const { Sesion_id, Socios } = req.body;
+    const { Grupo_id, Socios } = req.body;
 
     //comprobar que haya Sesion_id y Socios
-    if (!Sesion_id || !Socios) {
+    if (campos_incompletos({ Grupo_id, Socios })) {
         return res.json({ code: 400, message: 'Campos incompletos' }).status(400);
     }
 
-    // VERIFICACIONES
-            // Verificar que la sesion existe
-            const sesion = await existe_sesion(Sesion_id);
-            await tiene_permiso(req.id_socio_actual, sesion.Grupo_id);
+    try {
+        // VERIFICACIONES
+        // Verificar que la sesion existe
+        const sesion = await obtener_sesion_activa(Grupo_id);
+        await tiene_permiso(req.id_socio_actual, Grupo_id);
 
-    //registrar asistencias
-    const asistencias_con_error = [];
-    for (let i = 0; i < Socios.length; i++) {
-        try {
-            // Verificar que el socio existe
-            const socio = await existe_socio(Socios[i].Socio_id);
-            // Verificar que el socio pertenezca al grupo
-            await socio_en_grupo(socio.Socio_id, sesion.Grupo_id);
+        //registrar asistencias
+        const asistencias_con_error = [];
+        for (let i = 0; i < Socios.length; i++) {
+            try {
+                // Verificar que el socio existe
+                const socio = await existe_socio(Socios[i].Socio_id);
+                // Verificar que el socio pertenezca al grupo
+                await socio_en_grupo(socio.Socio_id, Grupo_id);
 
-            // INSERCION
-            let query = "INSERT INTO asistencias (Presente, Sesion_id, Socio_id) VALUES (?, ?, ?)";
-            await db.query(query, [Socios[i].Presente, Sesion_id, Socios[i].Socio_id]);
-        } catch (error) {
-            asistencias_con_error.push({
-                Socio_id: Socios[i].Socio_id,
-                error: (typeof (error) === "string") ?
-                    error :
-                    "Error del servidor"
-            });
+                // INSERCION
+                let query = "INSERT INTO asistencias (Presente, Sesion_id, Socio_id) VALUES (?, ?, ?)";
+                await db.query(query, [Socios[i].Presente, sesion.Sesion_id, Socios[i].Socio_id]);
+            } catch (error) {
+                const { message } = catch_common_error(error)
+                asistencias_con_error.push({
+                    Socio_id: Socios[i].Socio_id,
+                    error: message
+                });
+            }
         }
-    }
 
-    if (asistencias_con_error.length > 0) {
-        return res.json({ code: 400, message: 'Asistencias con error', data: asistencias_con_error }).status(400);
-    }
+        if (asistencias_con_error.length > 0) {
+            return res.json({ code: 400, message: 'Asistencias con error', data: asistencias_con_error }).status(400);
+        }
 
-    return res.json({ code: 200, message: 'Asistencias registradas' }).status(200);
+        return res.json({ code: 200, message: 'Asistencias registradas' }).status(200);
+    } catch (error) {
+        const { code, message } = catch_common_error(error);
+        return res.json({ code, message }).status(code);
+    }
 }
 
 //Obtener inasistencias de la sesion
 export const enviar_inasistencias_sesion = async (req, res) => {
-    const { Sesion_id } = req.body;
+    const { Grupo_id } = req.body;
 
     //comprobar que haya Sesion_id y Socios
-    if (!Sesion_id) {
+    if (!Grupo_id) {
         return res.json({ code: 400, message: 'Campos incompletos' }).status(400);
     }
 
     // Validar si la sesion existe y tiene permiso
     try {
-        const sesion = await existe_sesion(Sesion_id);
-        await tiene_permiso(req.id_socio_actual, sesion.Grupo_id);
-    } catch (error) {
-        return res.json({ code: 400, message: 'No hay una sesion con ese Id' }).status(400);
-    }
+        const sesion = await obtener_sesion_activa(Grupo_id);
+        await tiene_permiso(req.id_socio_actual, Grupo_id);
 
-    //buscar los registros con el id de la sesion y de los socios
-    try {
         let query = "CALL obtener_inasistencias_sesion(?)";
-        const [inasistencias] = (await db.query(query, [Sesion_id]))[0];
-        return res.json({ code: 200, message: 'Inasistencias obtenidos', data: inasistencias }).status(200);
-    } catch (err) {
-        return res.json({ code: 500, message: 'Error al obtener inasistencias' }).status(500);
+        const [inasistencias] = (await db.query(query, [sesion.Sesion_id]))[0];
+
+        return res.json({ code: 200, message: 'Inasistencias obtenidas', data: inasistencias }).status(200);
+    } catch (error) {
+        const { code, message } = catch_common_error(error);
+        return res.json({ code, message }).status(code);
     }
 }
 
@@ -118,47 +119,48 @@ export const enviar_inasistencias_sesion = async (req, res) => {
 //Registrar retardos
 export const registrar_retardos = async (req, res) => {
 
-    const { Sesion_id, Socios } = req.body;
+    const { Grupo_id, Socios } = req.body;
 
     //comprobar que haya Sesion_id y Socios
-    if (!Sesion_id || !Socios) {
+    if (!Grupo_id || !Socios) {
         // campos incompletos
         return res.json({ code: 400, message: 'Campos incompletos' }).status(400);
     }
 
-     // VERIFICACIONES
+    try {
+        // VERIFICACIONES
         // Verificar que la sesion existe
-        const sesion = await existe_sesion(Sesion_id);
-        await tiene_permiso(req.id_socio_actual, sesion.Grupo_id);
+        const sesion = await obtener_sesion_activa(Grupo_id);
+        await tiene_permiso(req.id_socio_actual, Grupo_id);
 
-    //registrar Retardos
-    const retardos_con_error = [];
-    for (let i = 0; i < Socios.length; i++) {
-        try {
-            // VERIFICACIONES
-            // Verificar que la sesion existe
-            const sesion = await existe_sesion(Sesion_id);
-            // Verificar que el socio existe
-            const socio = await existe_socio(Socios[i]);
-            // Verificar que el socio pertenezca al grupo
-            await socio_en_grupo(socio.Socio_id, sesion.Grupo_id);
+        //registrar Retardos
+        const retardos_con_error = [];
+        for (let i = 0; i < Socios.length; i++) {
+            try {
+                // Verificar que el socio existe
+                const socio = await existe_socio(Socios[i]);
+                // Verificar que el socio pertenezca al grupo
+                await socio_en_grupo(socio.Socio_id, Grupo_id);
 
-            // INSERCION
-            let query = "UPDATE asistencias SET Presente = 2 WHERE Sesion_id = ? AND Socio_id = ? AND Presente != 1";
-            await db.query(query, [Sesion_id, Socios[i]]);
-        } catch (error) {
-            retardos_con_error.push({
-                Socio_id,
-                error: (typeof (error) === "string") ?
-                    error :
-                    "Error del servidor"
-            });
+                // INSERCION
+                let query = "UPDATE asistencias SET Presente = 2 WHERE Sesion_id = ? AND Socio_id = ? AND Presente != 1";
+                await db.query(query, [sesion.Sesion_id, Socios[i]]);
+            } catch (error) {
+                const { message } = catch_common_error(error)
+                retardos_con_error.push({
+                    Socio_id: Socios[i].Socio_id,
+                    error: message
+                });
+            }
         }
-    }
 
-    if (retardos_con_error.length > 0) {
-        return res.json({ code: 400, message: 'Retardos con error', data: retardos_con_error }).status(400);
-    }
+        if (retardos_con_error.length > 0) {
+            return res.json({ code: 400, message: 'Retardos con error', data: retardos_con_error }).status(400);
+        }
 
-    return res.json({ code: 200, message: 'Retardos registrados' }).status(200);
+        return res.json({ code: 200, message: 'Retardos registrados' }).status(200);
+    } catch (error) {
+        const { code, message } = catch_common_error(error);
+        return res.json({ code, message }).status(code);
+    }
 }
