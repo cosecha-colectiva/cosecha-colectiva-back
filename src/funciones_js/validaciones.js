@@ -140,10 +140,10 @@ export const actualizar_password = async (Socio_id, Password) => {
 }
 
 export const catch_common_error = (error) => {
-    if ("code" in error && "message" in error && typeof(error["code"]) === "number") {
+    if ("code" in error && "message" in error && typeof (error["code"]) === "number") {
         return error;
-    } else if(typeof(error) === "string"){
-        return {code: 400, message: error};
+    } else if (typeof (error) === "string") {
+        return { code: 400, message: error };
     }
 
     return { message: "Error interno del servidor", code: 500 };
@@ -157,7 +157,7 @@ export const existe_pregunta = async (Pregunta_id) => {
         return pregunta[0];
     }
 
-    throw "No hay un pregunta con el id: " + Pregunta_id ;
+    throw "No hay un pregunta con el id: " + Pregunta_id;
 }
 
 
@@ -193,47 +193,149 @@ export const tiene_permiso = async (Socio_id, Grupo_id) => {
     throw { code: 401, message: "El socio con el id: " + Socio_id + " no tiene permisos sobre el grupo con id: " + Grupo_id };
 }
 
+// export const prestamos_multiples = async (Grupo_id, lista_socios) => {
+//     let lista_socios_prestamo = []; //{{"Socio_id" : 1, "Nombres" : "Ale", "Apellidos" : "De Alvino", "puede_pedir" : 0, "message": "Ya tiene un prestamo vigente" }} ----> prestamo en 0 significa que no puede pedir prestamo, si esta en 1 es que si puede pedir un prestamo 
+//     let query = "SELECT Ampliacion_prestamos FROM acuerdos WHERE Grupo_id = ? AND Status = 1";
+//     const [bool_ampliacion] = await db.query(query, [Grupo_id]);
+//     //Verificar si se permiten prestamos multiples
+//     if (bool_ampliacion === 0) {
+//         //si no se permiten, entonces asegurarse que no tengan ya un prestamo activo
+//         for (let i = 0; i < lista_socios.length; i++) {
+//             for (let socio in lista_socios[i]) {
+//                 await socio_en_grupo(socio.Socio_id, Grupo_id)
+//                 let query = "SELECT * FROM prestamos WHERE Socio_id = ? AND Estatus_prestamo = 0";
+//                 const [prestamo] = await db.query(query, [socio.Socio_id]);
+//                 if (prestamo.length > 0) {
+//                     //agregar el porque no puede pedir un prestamo
+//                     lista_socios_prestamo.push({ "Socio_id": socio.Socio_id, "Nombres": socio.Nombres, "Apellidos": socio.Apellidos, "puede_pedir": 0, "message": "Ya tiene un prestamo vigente" });
+//                 }
+//                 else {
+//                     //agregar al socio sin mensaje
+//                     lista_socios_prestamo.push({ "Socio_id": socio.Socio_id, "Nombres": socio.Nombres, "Apellidos": socio.Apellidos, "puede_pedir": 1, "message": "" });
+//                 }
+//             }
+//         }
+//     } else {
+//         //si si se permiten, entonces asegurarse que no haya excedido su limite de credito
+//         for (let i = 0; i < lista_socios.length; i++) {
+//             for (let socio in lista_socios[i]) {
+//                 await socio_en_grupo(socio.Socio_id, Grupo_id)
+//                 //Primero buscamos cuantas acciones tiene el socio
+//                 // let acciones_socio = socio.Acciones;
+//                 //Buscamos el limite de credito segun los acuerdos vijentes del grupo
+//                 let query2 = "SELECT Limite_credito FROM acuerdos WHERE Grupo_id = ? AND Status = 1";
+//                 const [Limite_credito] = await db.query(query, [socio.Grupo_id]);
+//                 //Buscamos todos los prestamos activos que tenga y sumamos las cantidades
+//                 let query3 = "SELECT * FROM prestamos WHERE Socio_id = ? AND Estatus_prestamo = 0";
+//                 const [prestamos] = await db.query(query, [socio.Grupo_id]);
+//                 if (prestamos.length <= 0) {
+//                     //puede pedir por que ni siquiera tiene algun prestamo
+//                     lista_socios_prestamo.push({ "Socio_id": socio.Socio_id, "Nombres": socio.Nombres, "Apellidos": socio.Apellidos, "puede_pedir": 1, "message": "" });
+//                 } else {
+//                     let total_prestamos = 0;
+//                     for (let i = 0; i < prestamos.length; i++) {
+//                         for (let prestamo in prestamos[i]) {
+//                             total_prestamos = total_prestamos + (prestamo.Monto_prestamo - prestamo.Monto_pagado);
+//                         }
+//                         let puede_pedir = total_prestamos < (socio.Acciones * Limite_credito) ? 1 : 0;
+//                         if (puede_pedir === 1) {
+//                             //si puede pedir porque sus prestamos no superan su limite
+//                             lista_socios_prestamo.push({ "Socio_id": socio.Socio_id, "Nombres": socio.Nombres, "Apellidos": socio.Apellidos, "puede_pedir": 1, "message": "" });
+//                         } else {
+//                             //agregar el porque no puede pedir un prestamo
+//                             lista_socios_prestamo.push({ "Socio_id": socio.Socio_id, "Nombres": socio.Nombres, "Apellidos": socio.Apellidos, "puede_pedir": 0, "message": "Sus prestamos llegan a su limite de credito" });
+//                         }
+//                     }
+
+//                 }
+//             }
+//         }
+//     }
+//     return lista_socios_prestamo;
+// }
+
+
 export const prestamos_multiples = async (Grupo_id, lista_socios) => {
+    let lista_socios_prestamo = []; //{{"Socio_id" : 1, "Nombres" : "Ale", "Apellidos" : "De Alvino", "puede_pedir" : 0, "message": "Ya tiene un prestamo vigente" }} ----> prestamo en 0 significa que no puede pedir prestamo, si esta en 1 es que si puede pedir un prestamo 
     let query = "SELECT Ampliacion_prestamos FROM acuerdos WHERE Grupo_id = ? AND Status = 1";
     const [bool_ampliacion] = await db.query(query, [Grupo_id]);
-    //Verificar si se permiten prestamos multiples
-    if (bool_ampliacion === 0) {
-        //si no se permiten, entonces asegurarse que no tengan ya un prestamo activo
-        for (let socio in lista_socios) {
-            await socio_en_grupo(socio.Socio_id, socio.Grupo_id)
-
+    //Buscamos el limite de credito segun los acuerdos vijentes del grupo
+    let query2 = "SELECT Limite_credito FROM acuerdos WHERE Grupo_id = ? AND Status = 1";
+    const [Limite_credito] = await db.query(query, [Grupo_id]);
+    //asegurarse que no haya excedido su limite de credito
+    for (let i = 0; i < lista_socios.length; i++) {
+        for (let socio in lista_socios[i]) {
+            await socio_en_grupo(socio.Socio_id, Grupo_id)
+            //Buscamos todos los prestamos activos que tenga y sumamos las cantidades
+            let query3 = "SELECT * FROM prestamos WHERE Socio_id = ? AND Estatus_prestamo = 0";
+            const [prestamos] = await db.query(query, [socio.Socio_id]);
+            if (prestamos.length <= 0) {
+                //puede pedir por que ni siquiera tiene algun prestamo
+                lista_socios_prestamo.push({ "Socio_id": socio.Socio_id, "Nombres": socio.Nombres, "Apellidos": socio.Apellidos, "puede_pedir": 1, "message": "", "Limite_credito_disponible" : (socio.Acciones * Limite_credito) });
+            } else {
+                //si no se permiten prestamos multiples mardar que no puede pedir otro prestamo
+                if (bool_ampliacion === 0) {
+                    lista_socios_prestamo.push({ "Socio_id": socio.Socio_id, "Nombres": socio.Nombres, "Apellidos": socio.Apellidos, "puede_pedir": 0, "message": "Ya tiene un prestamo vigente" });
+                }else{
+                    let total_prestamos = 0;
+                    for (let i = 0; i < prestamos.length; i++) {
+                        for (let prestamo in prestamos[i]) {
+                            total_prestamos = total_prestamos + prestamo.Monto_prestamo;
+                        }
+                        let puede_pedir = total_prestamos < (socio.Acciones * Limite_credito) ? 1 : 0;
+                        let Limite_credito_disponible = (socio.Acciones * Limite_credito) - total_prestamos;
+                        if (puede_pedir === 1) {
+                            //si puede pedir porque sus prestamos no superan su limite
+                            lista_socios_prestamo.push({ "Socio_id": socio.Socio_id, "Nombres": socio.Nombres, "Apellidos": socio.Apellidos, "puede_pedir": 1, "message": "", "Limite_credito_disponible": Limite_credito_disponible });
+                        } else {
+                            //agregar el porque no puede pedir un prestamo
+                            lista_socios_prestamo.push({ "Socio_id": socio.Socio_id, "Nombres": socio.Nombres, "Apellidos": socio.Apellidos, "puede_pedir": 0, "message": "Sus prestamos llegan a su limite de credito" });
+                        }
+                    }
+                }
+            }
         }
-    }else{
-        //si si se permiten, entonces asegurarse que no haya excedido su limite de credito
     }
+    return lista_socios_prestamo;
 }
 
 
 export const validar_password = async (Socio_id, Password) => {
     let query = "SELECT * FROM socios WHERE Socio_id = ?";
-        let [result] = await db.query(query, [Username.toLowerCase()]);
+    let [result] = await db.query(query, [Username.toLowerCase()]);
 
-        //validar que existe el usuario
-        if (result.length > 0) {
-            //validar que la contraseña sea correcta
-            if (bcrypt.compareSync(Password, result[0].Password)) {
-                return true;
-            }
-            else{
-                return false
-            }
-        }else{
+    //validar que existe el usuario
+    if (result.length > 0) {
+        //validar que la contraseña sea correcta
+        if (bcrypt.compareSync(Password, result[0].Password)) {
+            return true;
+        }
+        else {
             return false
         }
+    } else {
+        return false
+    }
 }
 
 export const obtener_sesion_activa = async (Grupo_id) => {
     let query = "SELECT * FROM sesiones WHERE sesiones.Activa = TRUE AND sesiones.Grupo_id = ? ORDER BY sesiones.Sesion_id DESC LIMIT 1";
     const [sesiones] = await db.query(query, Grupo_id);
 
-    if(sesiones.length > 0){
+    if (sesiones.length > 0) {
         return sesiones[0];
     }
 
     throw "No hay una sesion en curso para el grupo " + Grupo_id;
+}
+
+export const existe_prestamo = async (Prestamo_id) => {
+    let query = "Select * from prestamos where Prestamo_id = ?";
+    const prestamo = (await db.query(query, Prestamo_id))[0][0]
+
+    if (prestamo) {
+        return prestamo;
+    }
+
+    throw "No existe un prestamo con el id " + Prestamo_id;
 }
