@@ -105,8 +105,8 @@ export const enviar_inasistencias_sesion = async (req, res) => {
         const sesion = await obtener_sesion_activa(Grupo_id);
         await tiene_permiso(req.id_socio_actual, Grupo_id);
 
-        let query = "CALL obtener_inasistencias_sesion(?)";
-        const [inasistencias] = (await db.query(query, [sesion.Sesion_id]))[0];
+        let query = "SELECT socios.Nombres, socios.Apellidos, socios.Socio_id FROM asistencias JOIN socios ON asistencias.Socio_id = socios.Socio_id WHERE asistencias.Presente = 0 AND asistencias.Sesion_id = ?";
+        const [inasistencias] = (await db.query(query, [sesion.Sesion_id]));
 
         return res.json({ code: 200, message: 'Inasistencias obtenidas', data: inasistencias }).status(200);
     } catch (error) {
