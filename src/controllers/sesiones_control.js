@@ -59,6 +59,14 @@ export const registrar_asistencias = async (req, res) => {
         const sesion = await obtener_sesion_activa(Grupo_id);
         await tiene_permiso(req.id_socio_actual, Grupo_id);
 
+        // verificar que la sesion no tenga asistencias ya
+        let query = "select * from asistencias where Sesion_id = ?";
+        const [asistencias_grupo] = await db.query(query, sesion.Sesion_id);
+
+        if(asistencias_grupo.length > 0){
+            throw "Ya hay asistencias registradas para el grupo " + Grupo_id;
+        }
+
         //registrar asistencias
         const asistencias_con_error = [];
         for (let i = 0; i < Socios.length; i++) {
