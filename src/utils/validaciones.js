@@ -1,5 +1,5 @@
 import bcrypt from "bcrypt";
-const db = require('../../config/database');
+const db = require('../config/database');
 const random = require('string-random');
 
 export const validarCurp = function (curp) {
