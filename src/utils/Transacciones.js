@@ -1,4 +1,4 @@
-// crear nueva transaccion
+/* // crear nueva transaccion
 export const crearTransaccion = (transaccion) => {
     //verificar el tipo de transaccion
     if (transaccion.Catalogo_id) {
@@ -25,4 +25,4 @@ export const crearTransaccion = (transaccion) => {
 
     // retornar resultado
     return resultado;
-}
+} */

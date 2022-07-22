@@ -1,5 +1,5 @@
 import db from "../config/database";
-import { catch_common_error, existe_grupo, existe_prestamo, obtener_acuerdo_actual, obtener_sesion_activa, prestamos_multiples } from "../utils/validaciones";
+import { campos_incompletos, catch_common_error, existe_grupo, existe_prestamo, obtener_acuerdo_actual, obtener_sesion_activa, prestamos_multiples } from "../utils/validaciones";
 
 export const enviar_socios_prestamo = async (req, res) => {
     const { Grupo_id } = req.body;
@@ -78,7 +78,7 @@ const pagar_prestamo = async (Prestamo_id, Monto_abono_prestamo, Monto_abono_int
     // Crear transaccion en la base de datos:
     const connection = await db.getConnection()
     await connection.beginTransaction()
-        .then(() => {
+        .then(async () => {
             const prestamo = await obtener_prestamo(Prestamo_id);
             const grupo = await obtener_grupo_por_sesion(Sesion_id);
             let query;
@@ -97,8 +97,8 @@ const pagar_prestamo = async (Prestamo_id, Monto_abono_prestamo, Monto_abono_int
             query = "INSERT INTO transaccion_prestamos (Prestamo_id, Transaccion_id, Monto_abono_prestamo, Monto_abono_interes) VALUES (?, ?, ?, ?)";
             await db.query(query, [Prestamo_id,])
         })
-        .then(() => { await connection.commit() })
-        .catch((error) => {
+        .then(async () => { await connection.commit() })
+        .catch(async (error) => {
             await connection.rollback();
             throw error;
         })
@@ -127,7 +127,7 @@ export const pagar_prestamos = async (req, res) => {
         const acuerdo_actual = await obtener_acuerdo_actual(Grupo_id);
 
         const prestamos_con_error = [];
-        Prestamos.forEach((pago_prestamo) => {
+        Prestamos.forEach(async (pago_prestamo) => {
             try {
                 const { Prestamo_id, Monto_abono_interes, Monto_abono_prestamo } = pago_prestamo;
 
@@ -136,7 +136,7 @@ export const pagar_prestamos = async (req, res) => {
                 // Crear registro en "Transacciones"
                 const campos_transaccion = {
                     Cantidad_movimiento: Monto_abono_prestamo + Monto_abono_interes,
-                    Caja: sesion_activa.Caja + this.Cantidad_movimiento,
+                    Caja: sesion_activa.Caja + Monto_abono_prestamo + Monto_abono_interes,
                     Sesion_id: sesion_activa.Sesion_id,
                     Socio_id: prestamo.Socio_id,
                     Acuerdo_id: acuerdo_actual.Acuerdo_id,

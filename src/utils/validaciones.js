@@ -1,8 +1,8 @@
 import bcrypt from "bcrypt";
-const db = require('../config/database');
+const db = require('../config/database').default;
 const random = require('string-random');
 
-export const validarCurp = function (curp) {
+export const validarCurp = function (/** @type {string} */ curp) {
     const regex = /^([A-Z][AEIOUX][A-Z]{2}\d{2}(?:0[1-9]|1[0-2])(?:0[1-9]|[12]\d|3[01])[HM](?:AS|B[CS]|C[CLMSH]|D[FG]|G[TR]|HG|JC|M[CNS]|N[ETL]|OC|PL|Q[TR]|S[PLR]|T[CSL]|VZ|YN|ZS)[B-DF-HJ-NP-TV-Z]{3}[A-Z\d])(\d)$/;
     if (regex.test(curp)) {
         return true;
@@ -26,7 +26,7 @@ export const generarCodigoValido = function () {
             const rand = random(6, { letters: false });
             //comprobar que el codigo de grupo no exista
             let query = "SELECT * FROM grupos WHERE Codigo_grupo = ?";
-            const [rows] = await db.query(query, [rand])
+            const [rows] = /**@type {[import("mysql2").RowDataPacket[], *]} */ (await db.query(query, [rand]));
 
             if (rows.length == 0) {
                 return resolve(rand);
@@ -38,7 +38,7 @@ export const generarCodigoValido = function () {
 }
 
 // Funcion para saber si un json tiene campos como undefined
-export const campos_incompletos = (objeto) => {
+export const campos_incompletos = (/** @type {Object} */ objeto) => {
     for (let key in objeto) {
         if (objeto[key] === undefined) {
             console.log(key);
@@ -50,9 +50,9 @@ export const campos_incompletos = (objeto) => {
 }
 
 // Valida si el grupo existe en la BD
-export const existe_grupo = async (Grupo_id) => {
+export const existe_grupo = async (/** @type {Number} */ Grupo_id) => {
     let query = "SELECT * FROM grupos WHERE Codigo_grupo = ? or Grupo_id = ?";
-    const [grupo] = await db.query(query, [Grupo_id, Grupo_id]);
+    const [grupo] = /**@type {[import("mysql2").RowDataPacket[], *]} */ (await db.query(query, [Grupo_id, Grupo_id]));
 
     if (grupo.length != 0) {
         return grupo[0];
@@ -62,9 +62,9 @@ export const existe_grupo = async (Grupo_id) => {
 };
 
 // Valida si el socio existe en la BD
-export const existe_socio = async (Socio_id) => {
+export const existe_socio = async (/** @type {Number} */ Socio_id) => {
     let query = "SELECT * FROM socios WHERE Socio_id = ?";
-    const [socio] = await db.query(query, [Socio_id]);
+    const  [socio] = /**@type {[import("mysql2").RowDataPacket[], *]} */ (await db.query(query, [Socio_id]));
 
     if (socio.length != 0) {
         return socio[0];
@@ -74,9 +74,9 @@ export const existe_socio = async (Socio_id) => {
 }
 
 // Verificar que el socio esté en el grupo
-export const socio_en_grupo = async (Socio_id, Grupo_id) => {
+export const socio_en_grupo = async (/** @type {Number} */ Socio_id, /** @type {Number} */ Grupo_id) => {
     let query = "SELECT * FROM grupo_socio WHERE Socio_id = ? and Grupo_id = ? and Status = 1";
-    const [socio_grupo] = await db.query(query, [Socio_id, Grupo_id]);
+    const [socio_grupo] = /**@type {[import("mysql2").RowDataPacket[], *]} */ (await db.query(query, [Socio_id, Grupo_id]));
 
     if (socio_grupo.length != 0) {
         return socio_grupo[0];
@@ -85,9 +85,9 @@ export const socio_en_grupo = async (Socio_id, Grupo_id) => {
     throw "El socio con id " + Socio_id + " no está en e grupo con el id " + Grupo_id;
 }
 
-export const existe_sesion = async (Sesion_id) => {
+export const existe_sesion = async (/** @type {Number} */ Sesion_id) => {
     let query = "SELECT * FROM sesiones WHERE Sesion_id = ?";
-    const [sesion] = await db.query(query, [Sesion_id]);
+    const [sesion] = /**@type {[import("mysql2").RowDataPacket[], *]} */ (await db.query(query, [Sesion_id]));
 
     if (sesion.length != 0) {
         return sesion[0];
@@ -96,9 +96,9 @@ export const existe_sesion = async (Sesion_id) => {
     throw "No existe la sesion con el Id: " + Sesion_id;
 }
 
-export const existe_multa = async (Multa_id) => {
+export const existe_multa = async (/** @type {Number} */ Multa_id) => {
     let query = "SELECT * FROM multas WHERE Multa_id = ?";
-    const [multa] = await db.query(query, [Multa_id]);
+    const [multa] = /**@type {[import("mysql2").RowDataPacket[], *]} */ (await db.query(query, [Multa_id]));
 
     if (multa.length != 0) {
         return multa[0];
@@ -107,9 +107,9 @@ export const existe_multa = async (Multa_id) => {
     throw "No existe la multa con el Id: " + Multa_id;
 }
 
-export const existe_Acuerdo = async (Acuerdo_id) => {
+export const existe_Acuerdo = async (/** @type {Number} */ Acuerdo_id) => {
     let query = "SELECT * FROM acuerdos WHERE Acuerdo_id = ?";
-    const [acuerdo] = await db.query(query, [Acuerdo_id]);
+    const [acuerdo] = /**@type {[import("mysql2").RowDataPacket[], *]} */ (await db.query(query, [Acuerdo_id]));
 
     if (acuerdo.length != 0) {
         return acuerdo[0];
@@ -118,9 +118,9 @@ export const existe_Acuerdo = async (Acuerdo_id) => {
     throw "No existe el acuerdo con el Id: " + Acuerdo_id;
 }
 
-export const obtener_acuerdo_actual = async (Grupo_id) => {
+export const obtener_acuerdo_actual = async (/** @type {any} */ Grupo_id) => {
     let query = "SELECT * FROM acuerdos WHERE Grupo_id = ? and Status = 1";
-    const [acuerdo] = await db.query(query, [Grupo_id]);
+    const [acuerdo] = /**@type {[import("mysql2").RowDataPacket[], *]} */ (await db.query(query, [Grupo_id]));
 
     if (acuerdo.length != 0) {
         return acuerdo[0];
@@ -128,30 +128,36 @@ export const obtener_acuerdo_actual = async (Grupo_id) => {
 
     throw "No hay un acuerdo vigente para este grupo";
 }
+
+/**
+ * @param {string} respuesta
+ */
 export function aplanar_respuesta(respuesta) {
     return respuesta.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 }
 
-export const actualizar_password = async (Socio_id, Password) => {
+export const actualizar_password = async (/** @type {Number} */ Socio_id, /** @type {string} */ Password) => {
     return (await db.query(
         "Update Socios set password = ? where Socio_id = ?",
         [bcrypt.hashSync(Password, 10), Socio_id]
     ));
 }
 
-export const catch_common_error = (error) => {
+export const catch_common_error = (/** @type {String | {code: Number, message: String} | Error | any} */ error) => {
+    if (typeof (error) === "string") {
+        return { code: 400, message: error };
+    }
+    
     if ("code" in error && "message" in error && typeof (error["code"]) === "number") {
         return error;
-    } else if (typeof (error) === "string") {
-        return { code: 400, message: error };
     }
 
     return { message: "Error interno del servidor", code: 500 };
 }
 
-export const existe_pregunta = async (Pregunta_id) => {
+export const existe_pregunta = async (/** @type {string} */ Pregunta_id) => {
     let query = "SELECT * FROM preguntas_seguridad WHERE preguntas_seguridad_id = ?";
-    const [pregunta] = await db.query(query, [Pregunta_id]);
+    const [pregunta] = /**@type {[import("mysql2").RowDataPacket[], *]} */(await db.query(query, [Pregunta_id]));
 
     if (pregunta.length != 0) {
         return pregunta[0];
@@ -161,10 +167,10 @@ export const existe_pregunta = async (Pregunta_id) => {
 }
 
 
-export const tiene_permiso = async (Socio_id, Grupo_id) => {
+export const tiene_permiso = async (/** @type {string} */ Socio_id, /** @type {string} */ Grupo_id) => {
     // relacion = obtener campo de la tabla "grupo_socio"
     let query = "SELECT * FROM grupo_socio WHERE Socio_id = ? AND Grupo_id = ? LIMIT 1";
-    const [relacion] = await db.query(query, [Socio_id, Grupo_id]); // [[r1,r2,r3], fields]
+    const [relacion] = /**@type {[import("mysql2").RowDataPacket[], *]} */(await db.query(query, [Socio_id, Grupo_id]))
     // si relacion.tipo === "Admin"
     if (relacion[0].Tipo_socio === "ADMIN") {
         // return true
@@ -255,7 +261,7 @@ export const tiene_permiso = async (Socio_id, Grupo_id) => {
 // }
 
 
-export const prestamos_multiples = async (Grupo_id, lista_socios) => {
+export const prestamos_multiples = async (/** @type {import("mysql2/typings/mysql/lib/protocol/packets/RowDataPacket")[] | import("mysql2/typings/mysql/lib/protocol/packets/RowDataPacket")[][] | import("mysql2/typings/mysql/lib/protocol/packets/OkPacket") | import("mysql2/typings/mysql/lib/protocol/packets/OkPacket")[] | import("mysql2/typings/mysql/lib/protocol/packets/ResultSetHeader")} */ Grupo_id, /** @type {string | any[] | undefined} */ lista_socios) => {
     let lista_socios_prestamo = []; //{{"Socio_id" : 1, "Nombres" : "Ale", "Apellidos" : "De Alvino", "puede_pedir" : 0, "message": "Ya tiene un prestamo vigente" }} ----> prestamo en 0 significa que no puede pedir prestamo, si esta en 1 es que si puede pedir un prestamo 
     let query = "SELECT Ampliacion_prestamos FROM acuerdos WHERE Grupo_id = ? AND Status = 1";
     const [bool_ampliacion] = await db.query(query, [Grupo_id]);
@@ -300,9 +306,9 @@ export const prestamos_multiples = async (Grupo_id, lista_socios) => {
 }
 
 
-export const validar_password = async (Socio_id, Password) => {
+export const validar_password = async (/** @type {any} */ Socio_id, /** @type {string | Buffer} */ Password) => {
     let query = "SELECT * FROM socios WHERE Socio_id = ?";
-    let [result] = await db.query(query, [Username.toLowerCase()]);
+    let [result] = /**@type {[import("mysql2").RowDataPacket[], *]} */(await db.query(query, [Username.toLowerCase()]));
 
     //validar que existe el usuario
     if (result.length > 0) {
@@ -318,9 +324,9 @@ export const validar_password = async (Socio_id, Password) => {
     }
 }
 
-export const obtener_sesion_activa = async (Grupo_id) => {
+export const obtener_sesion_activa = async (/** @type {string | undefined} */ Grupo_id) => {
     let query = "SELECT * FROM sesiones WHERE sesiones.Activa = TRUE AND sesiones.Grupo_id = ? ORDER BY sesiones.Sesion_id DESC LIMIT 1";
-    const [sesiones] = await db.query(query, Grupo_id);
+    const sesiones = /**@type {[import("mysql2").RowDataPacket[], *]} */ (await db.query(query, Grupo_id))[0];
 
     if (sesiones.length > 0) {
         return sesiones[0];
@@ -329,7 +335,7 @@ export const obtener_sesion_activa = async (Grupo_id) => {
     throw "No hay una sesion en curso para el grupo " + Grupo_id;
 }
 
-export const existe_prestamo = async (Prestamo_id) => {
+export const existe_prestamo = async (/** @type {string} */ Prestamo_id) => {
     let query = "Select * from prestamos where Prestamo_id = ?";
     const prestamo = (await db.query(query, Prestamo_id))[0][0]
 

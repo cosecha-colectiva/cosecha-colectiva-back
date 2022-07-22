@@ -1,6 +1,5 @@
-import { Fecha_actual, campos_incompletos, existe_grupo, socio_en_grupo, catch_common_error, tiene_permiso } from '../funciones_js/validaciones';
-
-import db from "../../config/database";
+import db from '../config/database';
+import { campos_incompletos, catch_common_error, existe_grupo, Fecha_actual, socio_en_grupo, tiene_permiso } from '../utils/validaciones';
 
 // funcion para crear acuerdos
 export const crear_acuerdos = async (req, res) => { //
@@ -21,7 +20,7 @@ export const crear_acuerdos = async (req, res) => { //
         Creditos_simultaneos: body.Creditos_simultaneos,
         Interes_morosidad: body.Interes_morosidad,
         Ampliacion_prestamos: body.Ampliacion_prestamos, // true o false
-        Interes_ampliacion: this.Ampliacion_prestamos == "true" ? body.Interes_ampliacion : null, // si ampliacion prestamos... agrega interes ampliacion
+        Interes_ampliacion: body.Ampliacion_prestamos == "true" ? body.Interes_ampliacion : null, // si ampliacion prestamos... agrega interes ampliacion
         Mod_calculo_interes: body.Mod_calculo_interes,
         Tasa_interes_prestamo_grande: body.Tasa_interes_prestamo_grande,
         Id_socio_administrador: body.Id_socio_administrador,
@@ -33,7 +32,7 @@ export const crear_acuerdos = async (req, res) => { //
     }
 
     let query = "select * from grupo_socio where Socio_id = ? and grupo_id = ?";
-    let [[socio_grupo]] = await db.query(query, [id_socio_actual, campos_acuerdo.Grupo_id]);
+    let socio_grupo = (await db.query(query, [id_socio_actual, campos_acuerdo.Grupo_id]))[0][0];
 
     console.log("iniciando validaciones")
     Promise.all([ // Validaciones de formas asincronas

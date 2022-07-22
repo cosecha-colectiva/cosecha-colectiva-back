@@ -1,7 +1,7 @@
-const mysql = require('mysql2');
-const { host, user, password, database } = require('./config');
+import { createPool } from 'mysql2';
+import { host, user, password, database } from './config';
 
-const db = mysql.createPool({
+const db = createPool({
     connectionLimit: 10,
     host,
     user,
@@ -9,8 +9,4 @@ const db = mysql.createPool({
     database
 }).promise(); 
 
-// (error, results, fields) => {}
-// [results, fields] = await query(sql, values)
-// [nombreResultado] = await db.query(sql, values)
-
-module.exports = db;
+export default db;

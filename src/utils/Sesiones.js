@@ -1,4 +1,4 @@
-const db = require("../../config/database")
+/* const db = require("../../config/database")
 
 const actualizar_caja = (sesion_id, monto) => {
     // sumar o restar monto de Caja_cierre
@@ -15,4 +15,4 @@ const actualizar_caja = (sesion_id, monto) => {
 
 module.exports = { 
     actualizar_caja,
-};
+}; */

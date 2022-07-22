@@ -1,5 +1,5 @@
-const db = require('../../config/database');
-import { campos_incompletos, Fecha_actual, generarCodigoValido, existe_grupo, existe_socio, socio_en_grupo, catch_common_error } from '../funciones_js/validaciones';
+import db from '../config/database';
+import { campos_incompletos, catch_common_error, existe_grupo, existe_socio, Fecha_actual, generarCodigoValido, socio_en_grupo } from '../utils/validaciones';
 
 // Funcion para creacion de grupos
 export const crear_grupo = async (req, res, next) => {
@@ -64,7 +64,7 @@ export const agregar_socio = async (req, res) => {
             if (socio.Status != 1) try {
                 // Si está y está inactivo... activarlo
                 let query = "UPDATE grupo_socio SET Status = 1 where Socio_id = ? AND Grupo_id = ?";
-                await db.query(query, [Socio_id, Grupo_id]);
+                await db.query(query, [Socio_id, grupo.Grupo_id]);
             } catch (error) {
                 return res.status(500).json({ code: 500, message: 'Error en el servidor' });
             }
@@ -74,7 +74,7 @@ export const agregar_socio = async (req, res) => {
         } catch (error) { // si el socio no está en el grupo
             const campos_grupo_socio = {
                 Tipo_socio: req.body.Creando_grupo != undefined ? "CREADOR" : "SOCIO",
-                Grupo_id,
+                Grupo_id: grupo.Grupo_id,
                 Socio_id
             };
 
