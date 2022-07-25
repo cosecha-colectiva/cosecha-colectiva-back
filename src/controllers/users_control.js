@@ -1,8 +1,8 @@
-const jwt = require('jsonwebtoken');
-const db = require('../../config/database');
-var bcrypt = require('bcrypt');
-const { secret } = require('../../config/config');
-import { validarCurp, Fecha_actual, campos_incompletos, actualizar_password, existe_socio, catch_common_error, existe_pregunta, aplanar_respuesta } from '../funciones_js/validaciones';
+import * as bcrypt from "bcrypt";
+import { secret } from "../config/config";
+import db from "../config/database";
+import { actualizar_password, aplanar_respuesta, campos_incompletos, catch_common_error, existe_pregunta, existe_socio, Fecha_actual, validarCurp, validar_password } from "../utils/validaciones";
+import * as jwt from "jsonwebtoken";
 
 export const register = async (req, res, next) => {
     // Recoger los datos del body
@@ -35,9 +35,9 @@ export const register = async (req, res, next) => {
         res.status(400).json({ code: 400, message: 'Campos incompletos' });
     }
 
-    //comprobar que el usuario no exista
+    //comprobar que el socio no exista
     let query = "SELECT * FROM socios WHERE Username = ?";
-    const [rows] = await db.query(query, [campos_usuario.Username]);
+    const rows = /**@type {Socio[]} */ ((await db.query(query, [campos_usuario.Username]))[0]);
     if (rows.length > 0) {
         return res.status(400).json({ code: 400, message: 'El usuario ya existe' });
     }
@@ -48,7 +48,7 @@ export const register = async (req, res, next) => {
     }
     //comprobar que el curp sea unico
     query = "SELECT * FROM socios WHERE CURP = ?";
-    const [curpsIguales] = await db.query(query, [campos_usuario.CURP]);
+    const curpsIguales = /**@type {Socio[]} */ ((await db.query(query, [campos_usuario.CURP])[0]));
     if (curpsIguales.length > 0) {
         return res.status(400).json({ code: 400, message: 'El curp ya existe' });
     }
@@ -60,7 +60,7 @@ export const register = async (req, res, next) => {
             campos_usuario.Password = hashedPassword;
 
             let query = "INSERT INTO socios SET ?";
-            const [result] = await db.query(query, campos_usuario);
+            const result = /**@type {import("mysql2").OkPacket} */ ((await db.query(query, campos_usuario))[0]);
 
             // res.json({code: 200, message: 'Usuario guardado'}).status(200);
             console.log(result);
@@ -107,17 +107,17 @@ export const preguntas_seguridad_socio = async (req, res) => {
 
         // Obtener la respuesta del socio
         let query = "Select * from preguntas_socios where socio_id = ?"
-        const [preguntas_socios] = await db.query(query, [Socio_id, Pregunta_id])
+        const preguntas_socios = /**@type {PreguntaSocio[]} */ ((await db.query(query, [Socio_id, Pregunta_id]))[0])
 
-        if (validar_password(Socio_id, Password)) {
+        if (await validar_password(Socio_id, Password)) {
             if (id_socio_actual && preguntas_socios.length !== 0) {
                 query = "UPDATE preguntas_socios SET ? where socio_id = ?";
-                await db.query(query, [{ Socio_id: id_socio_actual, Pregunta_id, Respuesta: bcrypt.hashSync(Respuesta, 10) }, Socio_id]);
+                await db.query(query, [{ Socio_id: id_socio_actual, Pregunta_id, Respuesta: bcrypt.hashSync(/**@type {String} */(Respuesta), 10) }, Socio_id]);
                 return res.json({ code: 200, message: 'Pregunta del socio Actualizada' }).status(200);
             } else {
                 if (preguntas_socios.length === 0) {
                     query = "INSERT INTO preguntas_socios (Socio_id, Pregunta_id, Respuesta) VALUES (?, ?, ?)";
-                    await db.query(query, [Socio_id, Pregunta_id, bcrypt.hashSync(Respuesta, 10)]);
+                    await db.query(query, [Socio_id, Pregunta_id, bcrypt.hashSync(/**@type {String} */(Respuesta), 10)]);
                     return res.json({ code: 200, message: 'Pregunta del socio agregada' }).status(200);
                 }
                 else {
@@ -145,7 +145,7 @@ export const login = async (req, res) => {
     const { Username, Password } = req.body;
     if (Username && Password) {
         let query = "SELECT * FROM socios WHERE Username = ?";
-        let [result] = await db.query(query, [Username.toLowerCase()]);
+        let result = /**@type {Socio[]} */ ((await db.query(query, [Username.toLowerCase()]))[0]);
 
         //validar que existe el usuario
         if (result.length > 0) {
@@ -189,7 +189,7 @@ export const recuperar_password = (req, res) => {
         .then(async () => { // Si la informacion es valida
             // Obtener la respuesta del socio
             let query = "Select * from preguntas_socios where socio_id = ? and Pregunta_id = ?"
-            const [preguntas_socios] = await db.query(query, [Socio_id, Pregunta_id])
+            const preguntas_socios =/** @type {PreguntaSocio[]} */ ((await db.query(query, [Socio_id, Pregunta_id]))[0])
 
             if (preguntas_socios.length === 0) {
                 return res.status(400).json({ code: 400, message: "Pregunta Incorrecta" });

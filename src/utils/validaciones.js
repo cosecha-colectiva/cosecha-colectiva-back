@@ -118,7 +118,7 @@ export const existe_Acuerdo = async (/** @type {Number} */ Acuerdo_id) => {
     throw "No existe el acuerdo con el Id: " + Acuerdo_id;
 }
 
-export const obtener_acuerdo_actual = async (/** @type {any} */ Grupo_id) => {
+export const obtener_acuerdo_actual = async (/** @type {Number} */ Grupo_id) => {
     let query = "SELECT * FROM acuerdos WHERE Grupo_id = ? and Status = 1";
     const [acuerdo] = /**@type {[import("mysql2").RowDataPacket[], *]} */ (await db.query(query, [Grupo_id]));
 
@@ -324,7 +324,7 @@ export const validar_password = async (/** @type {any} */ Socio_id, /** @type {s
     }
 }
 
-export const obtener_sesion_activa = async (/** @type {string | undefined} */ Grupo_id) => {
+export const obtener_sesion_activa = async (/** @type {Number} */ Grupo_id) => {
     let query = "SELECT * FROM sesiones WHERE sesiones.Activa = TRUE AND sesiones.Grupo_id = ? ORDER BY sesiones.Sesion_id DESC LIMIT 1";
     const sesiones = /**@type {[import("mysql2").RowDataPacket[], *]} */ (await db.query(query, Grupo_id))[0];
 
@@ -333,15 +333,4 @@ export const obtener_sesion_activa = async (/** @type {string | undefined} */ Gr
     }
 
     throw "No hay una sesion en curso para el grupo " + Grupo_id;
-}
-
-export const existe_prestamo = async (/** @type {string} */ Prestamo_id) => {
-    let query = "Select * from prestamos where Prestamo_id = ?";
-    const prestamo = (await db.query(query, Prestamo_id))[0][0]
-
-    if (prestamo) {
-        return prestamo;
-    }
-
-    throw "No existe un prestamo con el id " + Prestamo_id;
 }

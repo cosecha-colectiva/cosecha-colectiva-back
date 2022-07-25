@@ -1,6 +1,5 @@
-import { campos_incompletos, existe_grupo, existe_sesion, existe_socio, Fecha_actual, socio_en_grupo, tiene_permiso, catch_common_error, obtener_sesion_activa } from "../funciones_js/validaciones";
-
-const db = require("../../config/database");
+import db from "../config/database";
+import { Fecha_actual, campos_incompletos, existe_grupo, tiene_permiso, catch_common_error, obtener_sesion_activa, existe_socio, socio_en_grupo } from "../utils/validaciones";
 
 //crear nueva sesion
 export const crear_sesion = async (req, res) => {
@@ -61,7 +60,7 @@ export const registrar_asistencias = async (req, res) => {
 
         // verificar que la sesion no tenga asistencias ya
         let query = "select * from asistencias where Sesion_id = ?";
-        const [asistencias_grupo] = await db.query(query, sesion.Sesion_id);
+        const asistencias_grupo = /**@type {Asistencia[]} */ ((await db.query(query, sesion.Sesion_id))[0]);
 
         if(asistencias_grupo.length > 0){
             throw "Ya hay asistencias registradas para el grupo " + Grupo_id;
