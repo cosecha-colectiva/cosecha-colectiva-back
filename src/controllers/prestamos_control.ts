@@ -1,5 +1,9 @@
+import { Request, Response } from "express";
+import { OkPacket, RowDataPacket } from "mysql2";
 import db from "../config/database";
-import { campos_incompletos, catch_common_error, existe_grupo, existe_prestamo, obtener_acuerdo_actual, obtener_sesion_activa, prestamos_multiples } from "../utils/validaciones";
+import { CustomRequest } from "../types/misc";
+import { existe_prestamo, prestamo_pagable } from "../services/Prestamos.services";
+import { campos_incompletos, catch_common_error, existe_grupo, obtener_acuerdo_actual, obtener_sesion_activa, prestamos_multiples } from "../utils/validaciones";
 
 export const enviar_socios_prestamo = async (req, res) => {
     const { Grupo_id } = req.body;
@@ -64,61 +68,17 @@ const obtener_caja_sesion = async (Sesion_id) => {
     return (await db.query(query, Sesion_id))[0][0]?.Caja;
 }
 
-const obtener_prestamo = async (Prestamo_id) => {
-    let query = "Select * from prestamos where Prestamo_id = ?";
-    return (await db.query(query, Prestamo_id))[0][0];
+interface PayloadPagarPrestamos {
+    Grupo_id: number,
+    Prestamos: {
+        Prestamo_id: number,
+        Monto_abono_prestamo: number,
+        Monto_abono_interes: number
+    }[]
 }
 
-const obtener_grupo_por_sesion = async (Sesion_id) => {
-    let query = "SELECT grupos.* FROM grupos JOIN sesiones ON sesiones.Grupo_id = grupos.Grupo_id WHERE sesiones.Sesion_id = ?";
-    return (await db.query(query, Sesion_id))[0][0];
-}
-
-const pagar_prestamo = async (Prestamo_id, Monto_abono_prestamo, Monto_abono_interes, Sesion_id) => {
-    // Crear transaccion en la base de datos:
-    const connection = await db.getConnection()
-    await connection.beginTransaction()
-        .then(async () => {
-            const prestamo = await obtener_prestamo(Prestamo_id);
-            const grupo = await obtener_grupo_por_sesion(Sesion_id);
-            let query;
-
-            // Crear registro en Transacciones
-            const campos_transacciones = {
-                Cantidad_movimiento: Monto_abono_prestamo + Monto_abono_interes,
-                Caja: await obtener_caja_sesion(Sesion_id),
-                Sesion_id,
-                Socio_id: prestamo.Socio_id,
-                Acuerdo: await obtener_acuerdo_actual(grupo.Grupo_id)
-            }
-            query = ""
-
-            // Crear registro en Transaccion_prestamos
-            query = "INSERT INTO transaccion_prestamos (Prestamo_id, Transaccion_id, Monto_abono_prestamo, Monto_abono_interes) VALUES (?, ?, ?, ?)";
-            await db.query(query, [Prestamo_id,])
-        })
-        .then(async () => { await connection.commit() })
-        .catch(async (error) => {
-            await connection.rollback();
-            throw error;
-        })
-
-
-    // dividir lo que le corresponde a interes y cuanto a prestamo
-
-    // Actualizar campos en el prestamo
-    //Interes pagado        
-    //Monto_pagado
-    //Si esta completo cambiar estatus del prestamo
-    //Sesiones restantes
-
-
-    // Actualizar caja
-
-}
-
-export const pagar_prestamos = async (req, res) => {
-    const { Grupo_id, Prestamos } = req.body; // {Grupo_id = 1, Prestamos: [{Prestamo_id: 1, Monto_abono_prestamo: 15, Monto_abono_interes: 10}, {...}, ...]}
+export const pagar_prestamos = async (req: CustomRequest<PayloadPagarPrestamos>, res: Response) => {
+    const { Grupo_id, Prestamos } = req.body;
 
     try {
         // Validaciones generales
@@ -126,36 +86,77 @@ export const pagar_prestamos = async (req, res) => {
         const sesion_activa = await obtener_sesion_activa(Grupo_id);
         const acuerdo_actual = await obtener_acuerdo_actual(Grupo_id);
 
-        const prestamos_con_error = [];
+        const prestamos_con_error: { Prestamo_id: number, motivo: string }[] = [];
         Prestamos.forEach(async (pago_prestamo) => {
+            // iniciar transaction con la DB
+            const con = await db.getConnection();
+            await con.beginTransaction();
+
             try {
                 const { Prestamo_id, Monto_abono_interes, Monto_abono_prestamo } = pago_prestamo;
+                const prestamo = await existe_prestamo(Prestamo_id) as Prestamo;
+                await prestamo_pagable(prestamo);
 
-                const prestamo = await obtener_prestamo(Prestamo_id);
+                if (prestamo.Interes_generado >= prestamo.Interes_pagado + Monto_abono_interes) {
+                    throw `Lo abonado al interés (${Monto_abono_interes}) es mayor que la deuda por interés (${prestamo.Interes_generado - prestamo.Interes_pagado})`;
+                }
+                if (prestamo.Monto_prestamo >= prestamo.Monto_pagado + Monto_abono_prestamo) {
+                    throw `Lo abonado al prestamo (${Monto_abono_prestamo}) es mayor que la deuda por prestamo (${prestamo.Monto_prestamo - prestamo.Monto_pagado})`;
+                }
 
                 // Crear registro en "Transacciones"
                 const campos_transaccion = {
                     Cantidad_movimiento: Monto_abono_prestamo + Monto_abono_interes,
                     Caja: sesion_activa.Caja + Monto_abono_prestamo + Monto_abono_interes,
                     Sesion_id: sesion_activa.Sesion_id,
-                    Socio_id: prestamo.Socio_id,
+                    Socio_id: prestamo!.Socio_id,
                     Acuerdo_id: acuerdo_actual.Acuerdo_id,
                     Catalogo_id: "ABONO_PRESTAMO"
                 }
 
                 let query = "Insert into transacciones SET ?";
-                const resultado_registro_transaccion = await db.query(query, campos_transaccion);
+                const resultado_registro_transaccion = (await con.query(query, campos_transaccion))[0] as OkPacket;
+
+                // Actualizar caja
+                query = "Update sesiones set caja = ? where Sesion_id = ?";
+                await con.query(query, [campos_transaccion.Caja, campos_transaccion.Sesion_id]);
 
                 // Crear registro en Transaccion_prestamos
                 query = "INSERT INTO transaccion_prestamos (Prestamo_id, Transaccion_id, Monto_abono_prestamo, Monto_abono_interes) VALUES (?, ?, ?, ?)";
+                await con.query(query, [Prestamo_id, resultado_registro_transaccion.insertId, Monto_abono_prestamo, Monto_abono_interes]);
 
-                
+                // Actualizar campos en el prestamo
+                prestamo.Interes_pagado += Monto_abono_interes;
+                prestamo.Monto_pagado += Monto_abono_prestamo;
+                prestamo.Estatus_prestamo = prestamo.Interes_generado === prestamo.Interes_generado && prestamo.Monto_pagado === prestamo.Monto_prestamo ? 1 : prestamo.Estatus_prestamo;
+
+                query = "Update prestamos SET ? where Prestamo_id = ?";
+                await con.query(query, [{
+                    InteresPagado: prestamo.Interes_pagado,
+                    Monto_pagado: prestamo.Monto_pagado,
+                    Estatus_prestamo: prestamo.Estatus_prestamo
+                },
+                    Prestamo_id]);
+
+                // Hacer commit en la base de datos
+                await con.commit();
             } catch (error) {
+                await con.rollback();
                 const { message } = catch_common_error(error);
                 prestamos_con_error.push({ Prestamo_id: pago_prestamo.Prestamo_id, motivo: message });
             }
+            finally {
+                con.destroy();
+            }
         });
+
+        // enviar respuesta al cliente
+        if (prestamos_con_error.length > 0) {
+            return res.status(400).json({ code: 400, message: "Hay prestamos con error", data: prestamos_con_error });
+        }
+        return res.status(200).json({ code: 200, message: "Todas los prestamos fueron pagados" });
     } catch (error) {
-        catch_common_error(error);
+        const { code, message } = catch_common_error(error);
+        return res.status(code).json({ code, message });
     }
 }
