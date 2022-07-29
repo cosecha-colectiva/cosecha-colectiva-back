@@ -2,12 +2,12 @@ import { Response } from "express";
 import db from "../config/database";
 import { CustomRequest } from "../types/misc";
 import { existe_prestamo, prestamo_pagable } from "../services/Prestamos.services";
+import { campos_incompletos, catch_common_error, existe_grupo, obtener_acuerdo_actual, obtener_sesion_activa, prestamos_multiples, obtener_acuerdos_activos, Fecha_actual } from "../utils/validaciones";
 import { crear_transaccion } from "../services/Transacciones.services";
 import { getCommonError } from "../utils/utils";
 import { existe_grupo } from "../services/Grupos.services";
 import { obtener_sesion_activa } from "../services/Sesiones.services";
 import { obtener_acuerdo_actual } from "../services/Acuerdos.services";
-import { campos_incompletos, catch_common_error, prestamos_multiples } from "../utils/validaciones";
 
 export const enviar_socios_prestamo = async (req, res) => {
     const { Grupo_id } = req.body;
@@ -27,44 +27,88 @@ export const enviar_socios_prestamo = async (req, res) => {
 
 }
 
-export const crear_prestamo = (req, res) => {
+export const crear_prestamo = async (req, res) => {
     const campos_prestamo = {
-        // Socio_id: req.body.Socio_id,
-        // Sesion_id: req.body.Sesion_id,
-        // Acuerdos_id: req.body.Acuerdos_id,
-        // Prestamo_original_id: req.body.Prestamo_original_id,
-        // Monto_prestamo: req.body.Monto_prestamo,
-        // Monto_pagado: req.body.Monto_pagado,
-        // Interes_generado: req.body.Interes_generado,
-        // Interes_pagado: req.body.Interes_pagado,
-        // Fecha_inicial: req.body.Fecha_inicial,
-        // Fecha_final: req.body.Fecha_final,
-        // Estatus_ampliacion: req.body.Estatus_ampliacion,
-        // Observaciones: req.body.Observaciones,
-        // Num_sesiones: req.body.Num_sesiones,
-        // Sesiones_restantes: req.body.Sesiones_restantes,
-        // Estatus_prestamo: req.body.Estatus_prestamo,
-
-        Lista_socios: req.body.Lista_socios // [{Socio_id}]
+        Grupo_id: req.body.Grupo_id,
+        Lista_socios: req.body.Lista_socios // [{Socio_id, cantidad_prestamo, fecha_probable, num_sesiones, observaciones}]
     };
 
     //campos incompletos
     if (campos_incompletos(campos_prestamo)) {
         res.status(400).json({ code: 400, message: 'Campos incompletos' });
     }
+    
+    //Existe el grupo
+    //Obtener la sesion activa
+    let Sesion_id = await obtener_sesion_activa(campos_prestamo.Grupo_id);
+    //Buscar los acuerdos activos
+    let acuerdos_activos = await obtener_acuerdos_activos(campos_prestamo.Grupo_id);
+    //Generar la fecha de hoy
+    let fecha = Fecha_actual();
 
+    let prestamos_con_error : { Socio_id: number, motivo: string }[] = [];
+    let Lista_socios_permiso: { Socio_id: number, Limite_credito_disponible : number}[] = [];
+
+    //Se crea una lista para poder hacer las validaciones
+    let Lista_socios_query : GrupoSocio[] = [];
+    for(let i = 0; i < campos_prestamo.Lista_socios.length; i++){
+        try{
+            let query = "SELECT * FROM grupo_socio WHERE Grupo_id = ? AND Socio_id = ?";
+            const socio = (await db.query(query, [campos_prestamo.Grupo_id, campos_prestamo.Lista_socios[i].Socio_id]))[0][0] as GrupoSocio;
+            Lista_socios_query.push(socio);
+        }catch{
+            return false; //cambiar a tipo error
+        }
+        
+    }
     // Validaciones
-    //Verificar si se permiten prestamos multiples
-    //si no, verificar si no tiene ningun otro prestamo
-    //verificar cantidad maxima que puede pedir el socio (cantidad de dinero en acciones * Limite credito de acuerdos)
-    //Calcular el monto acumulado en prestamos vigentes (si esta cantidad rebasa su limite no puede proceder)
-    //Verificar si hay esa cantidad disponible en la caja
+        //Verificar si se permiten prestamos multiples
+            //si no, verificar si no tiene ningun otro prestamo
+        //verificar cantidad maxima que puede pedir el socio (cantidad de dinero en acciones * Limite credito de acuerdos)
+        //Calcular el monto acumulado en prestamos vigentes (si esta cantidad rebasa su limite no puede proceder)
+        let Lista_socios_validacion = await prestamos_multiples(campos_prestamo.Grupo_id, Lista_socios_query);
+    
+        Lista_socios_validacion.forEach(socio => {
+            if(socio.puede_pedir){
+                Lista_socios_permiso.push({ "Socio_id": socio.Socio_id, "Limite_credito_disponible" : socio.Limite_credito_disponible!})
+            }else{
+                prestamos_con_error.push({ Socio_id: socio.Socio_id, motivo: "No cumple con los requisitos el solicitante" });
+            }
+        });
+    //Verificar que la cantidad que solicita no sobrepase su limite
+    campos_prestamo.Lista_socios.forEach(async(socio_general) =>{
+        Lista_socios_permiso.forEach(async(socio_permiso) =>
+            {
+                if(socio_general.Socio_id == socio_permiso.Socio_id ){
+                    if(socio_general.cantidad_prestamo <= socio_permiso.Limite_credito_disponible ){
+                        //Verificar si hay esa cantidad disponible en la caja
+                            //Obtener la caja de la sesion activa
+                            let caja = await obtener_caja_sesion(Sesion_id);
+                        if(caja >= socio_permiso.Limite_credito_disponible){
+                            // Crear Registro en prestamos
+                            let query = "INSERT INTO prestamos (Socio_id, Sesion_id, Acuerdos_id, Monto_prestamo, Fecha_inicial, Fecha_final, Observaciones, Num_sesiones, Sesiones_restantes, Estatus_prestamo) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                            await db.query(query, [socio_permiso.Socio_id, Sesion_id, acuerdos_activos.Acuerdos_id, socio_general.cantidad_prestamo, fecha, socio_general.fecha_probable, socio_general.observaciones, socio_general.num_sesiones, socio_general.num_sesiones, 0]);
+                            // Registrar salida de dinero de la caja de la sesion
+                            let caja_nueva = caja - socio_general.cantidad_prestamo;
+                            query = "Update sesiones set caja = ? where Sesion_id = ?";
+                            await db.query(query, [caja_nueva, Sesion_id]);
+                            // Crear la transaccion de tipo "PRESTAMO"
+                            let query2 = "Insert into transacciones SET ?";
+                            //const resultado_registro_transaccion = (await con.query(query2, campos_transaccion))[0] as OkPacket;
 
-    // Crear Registro en prestamos
+                        }else{
+                            prestamos_con_error.push({ Socio_id: socio_permiso.Socio_id, motivo: "No hay suficiente cantidad en la caja" });
+                        }
+                    }else{
+                        prestamos_con_error.push({ Socio_id: socio_permiso.Socio_id, motivo: "La cantidad solicitada rebasa su limite de credito" });
+                    }
+                }
+            }
+        );
+        
+    });
 
-    // Registrar salida de dinero de la caja de la sesion
-
-    // Crear la transaccion de tipo "PRESTAMO"
+    
 }
 
 interface PayloadPagarPrestamos {
