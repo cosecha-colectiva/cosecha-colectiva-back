@@ -1,9 +1,13 @@
-import { Request, Response } from "express";
-import { OkPacket, RowDataPacket } from "mysql2";
+import { Response } from "express";
 import db from "../config/database";
 import { CustomRequest } from "../types/misc";
 import { existe_prestamo, prestamo_pagable } from "../services/Prestamos.services";
 import { campos_incompletos, catch_common_error, existe_grupo, obtener_acuerdo_actual, obtener_sesion_activa, prestamos_multiples, obtener_acuerdos_activos, Fecha_actual } from "../utils/validaciones";
+import { crear_transaccion } from "../services/Transacciones.services";
+import { getCommonError } from "../utils/utils";
+import { existe_grupo } from "../services/Grupos.services";
+import { obtener_sesion_activa } from "../services/Sesiones.services";
+import { obtener_acuerdo_actual } from "../services/Acuerdos.services";
 
 export const enviar_socios_prestamo = async (req, res) => {
     const { Grupo_id } = req.body;
@@ -107,11 +111,6 @@ export const crear_prestamo = async (req, res) => {
     
 }
 
-const obtener_caja_sesion = async (Sesion_id) => {
-    let query = "Select Caja from sesiones WHERE Sesion_id = ? AND Activa = 1"; //creo que esta incompleta jaja
-    return (await db.query(query, Sesion_id))[0][0]?.Caja;
-}
-
 interface PayloadPagarPrestamos {
     Grupo_id: number,
     Prestamos: {
@@ -148,26 +147,19 @@ export const pagar_prestamos = async (req: CustomRequest<PayloadPagarPrestamos>,
                     throw `Lo abonado al prestamo (${Monto_abono_prestamo}) es mayor que la deuda por prestamo (${prestamo.Monto_prestamo - prestamo.Monto_pagado})`;
                 }
 
-                // Crear registro en "Transacciones"
-                const campos_transaccion = {
+                // Crear Transaccion
+                const transaccion = await crear_transaccion({
                     Cantidad_movimiento: Monto_abono_prestamo + Monto_abono_interes,
                     Caja: sesion_activa.Caja + Monto_abono_prestamo + Monto_abono_interes,
-                    Sesion_id: sesion_activa.Sesion_id,
-                    Socio_id: prestamo!.Socio_id,
-                    Acuerdo_id: acuerdo_actual.Acuerdo_id,
+                    Sesion_id: sesion_activa.Sesion_id!,
+                    Socio_id: prestamo.Socio_id,
+                    Acuerdo_id: acuerdo_actual.Acuerdo_id!,
                     Catalogo_id: "ABONO_PRESTAMO"
-                }
-
-                let query = "Insert into transacciones SET ?";
-                const resultado_registro_transaccion = (await con.query(query, campos_transaccion))[0] as OkPacket;
-
-                // Actualizar caja
-                query = "Update sesiones set caja = ? where Sesion_id = ?";
-                await con.query(query, [campos_transaccion.Caja, campos_transaccion.Sesion_id]);
+                }, con);
 
                 // Crear registro en Transaccion_prestamos
-                query = "INSERT INTO transaccion_prestamos (Prestamo_id, Transaccion_id, Monto_abono_prestamo, Monto_abono_interes) VALUES (?, ?, ?, ?)";
-                await con.query(query, [Prestamo_id, resultado_registro_transaccion.insertId, Monto_abono_prestamo, Monto_abono_interes]);
+                let query = "INSERT INTO transaccion_prestamos (Prestamo_id, Transaccion_id, Monto_abono_prestamo, Monto_abono_interes) VALUES (?, ?, ?, ?)";
+                await con.query(query, [Prestamo_id, transaccion.Transaccion_id, Monto_abono_prestamo, Monto_abono_interes]);
 
                 // Actualizar campos en el prestamo
                 prestamo.Interes_pagado += Monto_abono_interes;
@@ -175,18 +167,13 @@ export const pagar_prestamos = async (req: CustomRequest<PayloadPagarPrestamos>,
                 prestamo.Estatus_prestamo = prestamo.Interes_generado === prestamo.Interes_generado && prestamo.Monto_pagado === prestamo.Monto_prestamo ? 1 : prestamo.Estatus_prestamo;
 
                 query = "Update prestamos SET ? where Prestamo_id = ?";
-                await con.query(query, [{
-                    InteresPagado: prestamo.Interes_pagado,
-                    Monto_pagado: prestamo.Monto_pagado,
-                    Estatus_prestamo: prestamo.Estatus_prestamo
-                },
-                    Prestamo_id]);
+                await con.query(query, [prestamo, Prestamo_id]);
 
                 // Hacer commit en la base de datos
                 await con.commit();
             } catch (error) {
                 await con.rollback();
-                const { message } = catch_common_error(error);
+                const { message } = getCommonError(error);
                 prestamos_con_error.push({ Prestamo_id: pago_prestamo.Prestamo_id, motivo: message });
             }
             finally {
@@ -200,7 +187,6 @@ export const pagar_prestamos = async (req: CustomRequest<PayloadPagarPrestamos>,
         }
         return res.status(200).json({ code: 200, message: "Todas los prestamos fueron pagados" });
     } catch (error) {
-        const { code, message } = catch_common_error(error);
-        return res.status(code).json({ code, message });
+        return res.json(getCommonError(error));
     }
 }

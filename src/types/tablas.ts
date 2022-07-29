@@ -119,7 +119,7 @@ interface Sesion {
     Sesion_id?: number,
     Fecha: string,
     Activa: string,
-    Caja: string,
+    Caja: number,
     Acciones: string,
     Grupo_id: number
 }
@@ -148,6 +148,17 @@ interface Socio {
     Password: string,
     Fecha_reg: string,
     Status: string
+}
+
+interface Transaccion {
+    Transaccion_id?: number,
+    Cantidad_movimiento: number,
+    Caja: number,
+    Timestamp?: string,
+    Sesion_id: number,
+    Socio_id: number,
+    Acuerdo_id: number,
+    Catalogo_id: string
 }
 
 interface TransaccionPrestamo {
