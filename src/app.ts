@@ -12,6 +12,7 @@ import notFound from "./middleware/notFound";
 import { adminRoutes } from "./routes/admin_routes";
 import { multasRoutes } from "./routes/multas_routes";
 import { prestamosRoutes } from "./routes/prestamos_routes";
+import { node_env } from "./config/config";
 
 const app = express();
 
@@ -19,8 +20,12 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(morgan('dev'));
 app.use(helmet());
+
+// Morgan solo en node_env = "dev"
+if(node_env === "DEV") {
+    app.use(morgan('dev'));
+}
 
 // Rutas
 app.use(userRoutes);

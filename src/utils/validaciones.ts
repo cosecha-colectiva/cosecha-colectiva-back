@@ -2,15 +2,6 @@ import bcrypt from "bcrypt";
 const db = require('../config/database').default;
 const random = require('string-random');
 
-export const validarCurp = function (/** @type {string} */ curp) {
-    const regex = /^([A-Z][AEIOUX][A-Z]{2}\d{2}(?:0[1-9]|1[0-2])(?:0[1-9]|[12]\d|3[01])[HM](?:AS|B[CS]|C[CLMSH]|D[FG]|G[TR]|HG|JC|M[CNS]|N[ETL]|OC|PL|Q[TR]|S[PLR]|T[CSL]|VZ|YN|ZS)[B-DF-HJ-NP-TV-Z]{3}[A-Z\d])(\d)$/;
-    if (regex.test(curp)) {
-        return true;
-    } else {
-        return false;
-    }
-}
-
 export const Fecha_actual = function () {
     var now = new Date();
     var year = now.getFullYear();
@@ -255,7 +246,7 @@ export const prestamos_multiples = async (Grupo_id, /** @type {string | any[] | 
 
 export const validar_password = async (/** @type {any} */ Socio_id, /** @type {string} */ Password) => {
     let query = "SELECT * FROM socios WHERE Socio_id = ?";
-    let [result] = /**@type {[import("mysql2").RowDataPacket[], *]} */(await db.query(query, [Socio_id, Password]));
+    let [result] = /**@type {[import("mysql2").RowDataPacket[], *]} */(await db.query(query, [Socio_id]));
 
     //validar que existe el usuario
     if (result.length > 0) {
