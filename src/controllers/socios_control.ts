@@ -3,6 +3,7 @@ import { secret } from "../config/config";
 import db from "../config/database";
 import { actualizar_password, aplanar_respuesta, campos_incompletos, catch_common_error, existe_pregunta, existe_socio, Fecha_actual, validarCurp, validar_password } from "../utils/validaciones";
 import * as jwt from "jsonwebtoken";
+import { OkPacket } from "mysql2";
 
 export const register = async (req, res, next) => {
     // Recoger los datos del body
@@ -37,7 +38,7 @@ export const register = async (req, res, next) => {
 
     //comprobar que el socio no exista
     let query = "SELECT * FROM socios WHERE Username = ?";
-    const rows = /**@type {Socio[]} */ ((await db.query(query, [campos_usuario.Username]))[0]);
+    const rows = ((await db.query(query, [campos_usuario.Username]))[0]) as Socio[];
     if (rows.length > 0) {
         return res.status(400).json({ code: 400, message: 'El usuario ya existe' });
     }
@@ -60,7 +61,7 @@ export const register = async (req, res, next) => {
             campos_usuario.Password = hashedPassword;
 
             let query = "INSERT INTO socios SET ?";
-            const result = /**@type {import("mysql2").OkPacket} */ ((await db.query(query, campos_usuario))[0]);
+            const result = ((await db.query(query, campos_usuario))[0]) as OkPacket;
 
             // res.json({code: 200, message: 'Usuario guardado'}).status(200);
             console.log(result);
@@ -107,7 +108,7 @@ export const preguntas_seguridad_socio = async (req, res) => {
 
         // Obtener la respuesta del socio
         let query = "Select * from preguntas_socios where socio_id = ?"
-        const preguntas_socios = /**@type {PreguntaSocio[]} */ ((await db.query(query, [Socio_id, Pregunta_id]))[0])
+        const preguntas_socios = ((await db.query(query, [Socio_id, Pregunta_id]))[0]) as PreguntaSocio[];
 
         if (await validar_password(Socio_id, Password)) {
             if (id_socio_actual && preguntas_socios.length !== 0) {
@@ -145,7 +146,7 @@ export const login = async (req, res) => {
     const { Username, Password } = req.body;
     if (Username && Password) {
         let query = "SELECT * FROM socios WHERE Username = ?";
-        let result = /**@type {Socio[]} */ ((await db.query(query, [Username.toLowerCase()]))[0]);
+        let [result] = await db.query(query, [Username.toLowerCase()]) as [Socio[], any];
 
         //validar que existe el usuario
         if (result.length > 0) {
@@ -158,11 +159,10 @@ export const login = async (req, res) => {
                 }, secret);
 
                 //mandando token por el header
-                return res.status(200)
-                    .json({ code: 200, message: 'Usuario autenticado', token, data: { Socio_id: result[0].Socio_id, Username: result[0].Username } });
+                return res.status(200).json({ code: 200, message: 'Usuario autenticado', token, data: { Socio_id: result[0].Socio_id, Username: result[0].Username } });
             }
             else {
-                return res.status(400).json({ code: 400, message: 'Contraseña incorrecta' });
+                return res.status(401).json({ code: 400, message: 'Contraseña incorrecta' });
             }
         }
         else {
@@ -171,7 +171,7 @@ export const login = async (req, res) => {
         }
     } else {
         //campos incompletos
-        res.status(400).json({ code: 400, message: 'Campos incompletos' });
+        return res.status(400).json({ code: 400, message: 'Campos incompletos' });
     }
 }
 
@@ -189,7 +189,7 @@ export const recuperar_password = (req, res) => {
         .then(async () => { // Si la informacion es valida
             // Obtener la respuesta del socio
             let query = "Select * from preguntas_socios where socio_id = ? and Pregunta_id = ?"
-            const preguntas_socios =/** @type {PreguntaSocio[]} */ ((await db.query(query, [Socio_id, Pregunta_id]))[0])
+            const preguntas_socios = ((await db.query(query, [Socio_id, Pregunta_id]))[0]) as PreguntaSocio[];
 
             if (preguntas_socios.length === 0) {
                 return res.status(400).json({ code: 400, message: "Pregunta Incorrecta" });

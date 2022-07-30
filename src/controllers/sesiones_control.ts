@@ -60,14 +60,14 @@ export const registrar_asistencias = async (req, res) => {
 
         // verificar que la sesion no tenga asistencias ya
         let query = "select * from asistencias where Sesion_id = ?";
-        const asistencias_grupo = /**@type {Asistencia[]} */ ((await db.query(query, sesion.Sesion_id))[0]);
+        const asistencias_grupo = ((await db.query(query, sesion.Sesion_id))[0]) as Asistencia[];
 
         if(asistencias_grupo.length > 0){
             throw "Ya hay asistencias registradas para el grupo " + Grupo_id;
         }
 
         //registrar asistencias
-        const asistencias_con_error = [];
+        const asistencias_con_error: {Socio_id: number, error: string}[] = [];
         for (let i = 0; i < Socios.length; i++) {
             try {
                 // Verificar que el socio existe
@@ -141,7 +141,7 @@ export const registrar_retardos = async (req, res) => {
         await tiene_permiso(req.id_socio_actual, Grupo_id);
 
         //registrar Retardos
-        const retardos_con_error = [];
+        const retardos_con_error: {Socio_id: number, error: string}[] = [];
         for (let i = 0; i < Socios.length; i++) {
             try {
                 // Verificar que el socio existe

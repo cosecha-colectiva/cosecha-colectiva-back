@@ -199,10 +199,17 @@ export const tiene_permiso = async (/** @type {string} */ Socio_id, /** @type {s
     throw { code: 401, message: "El socio con el id: " + Socio_id + " no tiene permisos sobre el grupo con id: " + Grupo_id };
 }
 
-
+interface SociosPrestamo {
+    Socio_id: number,
+    Nombres: string,
+    Apellidos: string, 
+    puede_pedir: 1 | 0,
+    message: string
+    Limite_credito_disponible?: number
+}
 // /** @type {import("mysql2/typings/mysql/lib/protocol/packets/RowDataPacket")[] | import("mysql2/typings/mysql/lib/protocol/packets/RowDataPacket")[][] | import("mysql2/typings/mysql/lib/protocol/packets/OkPacket") | import("mysql2/typings/mysql/lib/protocol/packets/OkPacket")[] | import("mysql2/typings/mysql/lib/protocol/packets/ResultSetHeader")} */
 export const prestamos_multiples = async (Grupo_id, /** @type {string | any[] | undefined} */ lista_socios) => {
-    let lista_socios_prestamo = []; //{{"Socio_id" : 1, "Nombres" : "Ale", "Apellidos" : "De Alvino", "puede_pedir" : 0, "message": "Ya tiene un prestamo vigente" }} ----> prestamo en 0 significa que no puede pedir prestamo, si esta en 1 es que si puede pedir un prestamo 
+    let lista_socios_prestamo: SociosPrestamo[] = []; //{{"Socio_id" : 1, "Nombres" : "Ale", "Apellidos" : "De Alvino", "puede_pedir" : 0, "message": "Ya tiene un prestamo vigente" }} ----> prestamo en 0 significa que no puede pedir prestamo, si esta en 1 es que si puede pedir un prestamo 
     if(!Grupo_id || !lista_socios){
         return []; // corregir a tipo error
     }

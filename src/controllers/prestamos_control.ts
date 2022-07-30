@@ -1,13 +1,13 @@
 import { Response } from "express";
 import db from "../config/database";
-import { CustomRequest } from "../types/misc";
 import { existe_prestamo, prestamo_pagable } from "../services/Prestamos.services";
-import { campos_incompletos, catch_common_error, existe_grupo, obtener_acuerdo_actual, obtener_sesion_activa, prestamos_multiples, obtener_acuerdos_activos, Fecha_actual } from "../utils/validaciones";
 import { crear_transaccion } from "../services/Transacciones.services";
 import { getCommonError } from "../utils/utils";
 import { existe_grupo } from "../services/Grupos.services";
-import { obtener_sesion_activa } from "../services/Sesiones.services";
+import { obtener_caja_sesion, obtener_sesion_activa } from "../services/Sesiones.services";
 import { obtener_acuerdo_actual } from "../services/Acuerdos.services";
+import { prestamos_multiples, campos_incompletos, Fecha_actual, obtener_acuerdos_activos } from "../utils/validaciones";
+import { CustomRequest } from "../types/misc";
 
 export const enviar_socios_prestamo = async (req, res) => {
     const { Grupo_id } = req.body;
@@ -17,8 +17,8 @@ export const enviar_socios_prestamo = async (req, res) => {
 
     let query = "SELECT * FROM grupo_socio WHERE Grupo_id = ?";
     const [socios] = await db.query(query, [Grupo_id]); // [[...resultados], [...campos]]
-    console.log(prestamos_multiples(socios));
-    const socios_prestamos = await prestamos_multiples(socios);
+    console.log(prestamos_multiples(Grupo_id, socios));
+    const socios_prestamos = await prestamos_multiples(Grupo_id, socios);
     if (socios_prestamos.length > 0) {
         return res.json({ code: 200, message: 'Socios obtenidos', data: socios_prestamos }).status(200);
     } else {

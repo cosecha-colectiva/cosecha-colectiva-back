@@ -5,7 +5,7 @@ export const agregar_catalogo_transaccion = async (req, res) => {
     const { Catalogo_id, Tipo } = req.body;
     if (Catalogo_id && Tipo) {
         let consulta = "SELECT * FROM catalogo_transacciones WHERE Catalogo_id = ?";
-        const [resultado] = /** @type {[import("mysql2").RowDataPacket[], *]} */ (await db.query(consulta, [Catalogo_id]));
+        const resultado = (await db.query(consulta, [Catalogo_id]))[0] as CatalogoTransaccion[];
         if (resultado.length == 0) {
             try {
                 const query = "INSERT INTO catalogo_transacciones (Catalogo_id, Tipo) VALUES (?, ?)";
@@ -28,7 +28,7 @@ export const agregar_catalogo_preguntas_seguridad = async (req, res) => {
     const { Pregunta } = req.body;
     if (Pregunta) {
         let consulta = "SELECT * FROM preguntas_seguridad WHERE Pregunta = ?";
-        const [resultado] = /** @type {[import("mysql2").RowDataPacket[], *]} */ (await db.query(consulta, [Pregunta]));
+        const resultado = (await db.query(consulta, [Pregunta]))[0] as PreguntaSeguridad[];
         if (resultado.length === 0) {
             try {
                 const query = "INSERT INTO preguntas_seguridad (Pregunta) VALUES (?)";

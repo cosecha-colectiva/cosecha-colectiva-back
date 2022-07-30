@@ -1,3 +1,4 @@
+import { OkPacket } from 'mysql2';
 import db from '../config/database';
 import { existe_grupo, tiene_permiso, campos_incompletos, existe_socio, catch_common_error, existe_multa, obtener_acuerdo_actual, obtener_sesion_activa, socio_en_grupo } from '../utils/validaciones';
 
@@ -59,7 +60,7 @@ export const crear_multa = async (req, res) => {
         await socio_en_grupo(campos_multa.Socio_id, Grupo_id)
 
         // Obtener la sesion activa del grupo
-        const sesion = await obtener_sesion_activa();
+        const sesion = await obtener_sesion_activa(Grupo_id);
         campos_multa.Sesion_id = sesion.Sesion_id;
 
         const query = "INSERT INTO multas SET ?";
@@ -91,7 +92,7 @@ export const pagar_multas = async (req, res) => {
         // obtener id del acuerdo actual
         const acuerdo = await obtener_acuerdo_actual(sesion.Grupo_id);
 
-        let multas_con_error = [];
+        let multas_con_error: {Multa_id: number, error: string}[] = [];
         // iterar sobre los id de las multas
         for (const Multa_id of Multas) {
             // cuando algo falla, levanta un error, y en el catch agregarlo a multas con error
@@ -116,7 +117,7 @@ export const pagar_multas = async (req, res) => {
 
                 // crear Transaccion
                 let query = "INSERT INTO transacciones SET ?";
-                const [resultadoTransaccion] = /** @type {[import("mysql2").OkPacket, *]} */ (await db.query(query, campos_transaccion));
+                const [resultadoTransaccion] = await db.query(query, campos_transaccion) as [OkPacket, any];
 
                 // Actualizar Status y Transaccion_id de multa
                 query = "UPDATE multas SET Status = 1, Transaccion_id = ? WHERE Multa_id = ?";
