@@ -85,5 +85,5 @@ export const agregar_socio = async (req, res) => {
         const { code, message } = catch_common_error(error);
         return res.status(code).json({ code, message })
     }
-    return res.status(200).json({ code: 200, message: 'Usuario Agregado al grupo' });
+    return res.status(201).json({ code: 201, message: 'Usuario Agregado al grupo' });
 }

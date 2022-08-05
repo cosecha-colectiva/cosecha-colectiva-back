@@ -1,5 +1,5 @@
 import { node_env } from "../config/config";
-import { CommonError } from "../types/misc";
+import { CommonError } from "../Types/misc";
 
 /**
  * Recibe un error y lo convierte en uno listo para el front
@@ -7,6 +7,8 @@ import { CommonError } from "../types/misc";
  * @returns Un error formateado como CommonError
  */
 export const getCommonError = (error: string | CommonError | Error | any): CommonError => {
+    console.log(error);
+
     if (typeof (error) === "string") {
         return { code: 400, message: error };
     }
@@ -34,7 +36,7 @@ export const formatearFecha = function (date: Date) {
     return year + '-' + month + '-' + day;
 }
 
-export const random = (...values) => {
+export const eleccion = (...values) => {
     const num = Math.random();
 
     let index = 0;
@@ -46,4 +48,12 @@ export const random = (...values) => {
     })
 
     return values[index];
+}
+
+export const Fecha_actual = function () {
+    var now = new Date();
+    var year = now.getFullYear();
+    var month = now.getMonth() + 1;
+    var day = now.getDate();
+    return year + '-' + month + '-' + day;
 }

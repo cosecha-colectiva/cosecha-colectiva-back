@@ -39,7 +39,7 @@ export const crear_multa = async (req, res) => {
         Monto_multa: req.body.Monto_multa,
         Descripcion: req.body.Descripcion,
         Socio_id: req.body.Socio_id,
-        Sesion_id: null
+        Sesion_id: -1
     };
 
     if (campos_incompletos({ ...campos_multa, Grupo_id })) {
@@ -61,7 +61,7 @@ export const crear_multa = async (req, res) => {
 
         // Obtener la sesion activa del grupo
         const sesion = await obtener_sesion_activa(Grupo_id);
-        campos_multa.Sesion_id = sesion.Sesion_id;
+        campos_multa.Sesion_id = sesion.Sesion_id!;
 
         const query = "INSERT INTO multas SET ?";
         await db.query(query, campos_multa);

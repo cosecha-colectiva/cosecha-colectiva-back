@@ -1,4 +1,6 @@
 import db from '../config/database';
+import { CustomRequest } from '../Types/misc';
+import { getCommonError } from '../utils/utils';
 import { campos_incompletos, catch_common_error, existe_grupo, Fecha_actual, socio_en_grupo, tiene_permiso } from '../utils/validaciones';
 
 // funcion para crear acuerdos
@@ -33,25 +35,21 @@ export const crear_acuerdos = async (req, res) => { //
 
     let query = "select * from grupo_socio where Socio_id = ? and grupo_id = ?";
     let socio_grupo = (await db.query(query, [id_socio_actual, campos_acuerdo.Grupo_id]))[0][0];
-
-    console.log("iniciando validaciones")
+    
     Promise.all([ // Validaciones de formas asincronas
         existe_grupo(campos_acuerdo.Grupo_id),
         socio_en_grupo(campos_acuerdo.Id_socio_administrador, campos_acuerdo.Grupo_id),
         socio_en_grupo(campos_acuerdo.Id_socio_administrador_suplente, campos_acuerdo.Grupo_id),
         (socio_grupo.Tipo_socio === "CREADOR") ? Promise.resolve() : tiene_permiso(id_socio_actual, campos_acuerdo.Grupo_id),
     ])
-        .then(async ([]) => {
-            console.log("validaciones terminadas");
+        .then(async ([]) => {            
             const conn = await db.getConnection();
-            await conn.beginTransaction();
-            console.log("transaccion creada");
+            await conn.beginTransaction();            
 
             try {
                 // Actualizar status del acuerdo anterior
                 let query = "UPDATE acuerdos SET Status = 0 WHERE Grupo_id = ? and Status = 1";
-                await conn.query(query, [campos_acuerdo.Grupo_id]);
-                console.log("Terminando primera consulta");
+                await conn.query(query, [campos_acuerdo.Grupo_id]);                
                 // Crear el registro
                 query = "INSERT INTO acuerdos SET ?";
                 await conn.query(query, [campos_acuerdo]);
@@ -70,10 +68,9 @@ export const crear_acuerdos = async (req, res) => { //
 
                 // Hacer commit en la bd
                 await conn.commit();
-                conn.release();
-                console.log("Haciendo commit");
+                conn.release();                
 
-                return res.status(200).json({ code: 200, message: "Acuerdo registrado correctamente" });
+                return res.status(201).json({ code: 201, message: "Acuerdo registrado correctamente" });
             } catch (error) {
                 await conn.rollback();
                 conn.release();
@@ -85,12 +82,11 @@ export const crear_acuerdos = async (req, res) => { //
             const { message, code } = catch_common_error(error);
             return res.status(code).json({ code, message });
         })
-
-    console.log("Ya estoy libre");
+    
 }
 
 //funcion para crear acuerdo secundario
-export const crear_acuerdo_secundario = async (req, res) => {
+export const crear_acuerdo_secundario = async (req:CustomRequest<any>, res) => {
     const campos_acuerdo_secundario = {
         Grupo_id: req.body.Grupo_id,
         Regla: req.body.Regla,
@@ -110,14 +106,14 @@ export const crear_acuerdo_secundario = async (req, res) => {
         await existe_grupo(campos_acuerdo_secundario.Grupo_id);
 
         // verificar que el socio tiene permiso
-        await tiene_permiso(req.body.id_socio_actual, campos_acuerdo_secundario.Grupo_id);
+        await tiene_permiso(req.id_socio_actual!, campos_acuerdo_secundario.Grupo_id);
 
         let query = "INSERT INTO acuerdos_secundarios SET ?";
         await db.query(query, [campos_acuerdo_secundario]);
 
-        return res.status(200).json({ code: 200, message: "Acuerdo secundario registrado correctamente" });
+        return res.status(201).json({ code: 201, message: "Acuerdo secundario registrado correctamente" });
     } catch (error) {
-        const { code, message } = catch_common_error(error);
+        const { code, message } = getCommonError(error);
         return res.status(code).json({ code, message });
     }
 }

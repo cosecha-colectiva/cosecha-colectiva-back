@@ -59,9 +59,9 @@ interface Grupo {
 
 interface GrupoSocio {
     Grupo_socio_id?: number,
-    Tipo_socio: string,
-    Status: string,
-    Acciones: string,
+    Tipo_socio: "ADMIN" | "SOCIO" | "SUPLENTE" | "CREADOR",
+    Status: 0 | 1,
+    Acciones: number,
     Grupo_id: number,
     Socio_id: number
 }
@@ -78,7 +78,7 @@ interface Multa {
     Multa_id?: number,
     Monto_multa: string,
     Descripcion: string,
-    Status: string,
+    Status: 0 | 1,
     Sesion_id: number,
     Socio_id: number,
     Transaccion_id: number

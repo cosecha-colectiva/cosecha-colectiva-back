@@ -1,13 +1,15 @@
-import supertest from "supertest"
-import app from "../../src/app"
 import config from "../config";
 import db from "../../src/config/database";
 import * as falso from "@ngneat/falso";
-import { random, formatearFecha } from "../../src/utils/utils";
+import { eleccion, formatearFecha } from "../../src/utils/utils";
+import { request } from "../utils/utils";
+import { grupos_sin_socio } from "../../src/services/Grupos.services";
 
-const request = supertest(app);
+afterAll(async () => {
+    await db.end();
+});
 
-describe("Login", () => {
+describe.skip("Login", () => {
     const reqBody = { Username: config.Javi.username, Password: config.Javi.password }
 
     it("Debería devolver un token si las credenciales son correctas", async () => {
@@ -20,22 +22,22 @@ describe("Login", () => {
     it("Debería devolver un codigo 401 si la contraseña es incorrecta", async () => {
         const response = await request.post("/login")
             .send({ ...reqBody, Password: config.Javi.password + "hola" });
-            
+
         expect(response.statusCode).toBe(401);
     })
 })
 
-describe("Register", () => {
+describe.skip("Register", () => {
     const reqBody = {
         Nombres: falso.randFirstName(),
         Apellidos: falso.randLastName(),
         CURP: falso.randUuid(),
         Fecha_nac: formatearFecha(falso.randPastDate({ years: 70 })),
         Nacionalidad: falso.randCountry(),
-        Sexo: random("H", "M"),
-        Escolaridad: random("Posgrado", "Licenciatura", "Preparatoria", "Secundaria", "Primaria"),
+        Sexo: eleccion("H", "M"),
+        Escolaridad: eleccion("Posgrado", "Licenciatura", "Preparatoria", "Secundaria", "Primaria"),
         Ocupacion: falso.randJobTitle(),
-        Estado_civil: random("Soltero", "casado"),
+        Estado_civil: eleccion("Soltero", "casado"),
         Hijos: falso.randNumber({ min: 0, max: 3 }),
         Telefono: falso.randPhoneNumber(),
         Email: falso.randEmail(),
@@ -47,7 +49,7 @@ describe("Register", () => {
         Foto_perfil: falso.randAvatar(),
         Username: falso.randUserName(),
         Password: falso.randPassword(),
-        Pregunta_id: random(4, 14),
+        Pregunta_id: eleccion(4, 14),
         Respuesta: falso.randFirstName()
     }
 
@@ -60,6 +62,27 @@ describe("Register", () => {
 
 })
 
-afterAll(async () => {
-    await db.end();
-});
+describe.skip("Unirse a un grupo", () => {
+    const reqBody = {
+        Codigo_grupo: -1,
+    }
+
+    const reqHeader = {
+        Authorization: config.Ale.token,
+    }
+
+    it("Debería devolver un status de 201", async () => {
+        reqBody.Codigo_grupo = (await grupos_sin_socio(config.Ale.id))[0];
+
+        const response = await request.post("/agregar_socio")
+            .send(reqBody)
+            .set(reqHeader);
+
+        if(response.statusCode === 400) {
+            console.log(response.body);
+            console.log(reqBody);
+        }
+
+        expect(response.statusCode).toBe(201);
+    })
+})

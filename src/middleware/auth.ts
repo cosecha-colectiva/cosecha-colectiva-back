@@ -1,6 +1,5 @@
 import { NextFunction, Response } from "express";
 import jwt, { JwtPayload } from "jsonwebtoken";
-import { CustomRequest } from "../types/misc";
 const {secret} = require("../config/config");
 
 //auth con jwt en el header
