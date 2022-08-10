@@ -5,6 +5,7 @@ import { actualizar_password, aplanar_respuesta, campos_incompletos, catch_commo
 import * as jwt from "jsonwebtoken";
 import { OkPacket, RowDataPacket } from "mysql2";
 import { validarCurp } from "../utils/utils";
+import { CustomJwtPayload } from "../types/misc";
 
 export const register = async (req, res, next) => {
     // Recoger los datos del body
@@ -135,9 +136,9 @@ export const preguntas_seguridad_socio = async (req, res) => {
 }
 
 //Funcion para enviar las preguntas de seguridad
-// export const enviar_preguntas_seguridad = async (req, res) => {
+export const enviar_preguntas_seguridad = async (req, res) => {
 
-// }
+}
 
 //funcion para login
 export const login = async (req, res) => {
@@ -154,7 +155,7 @@ export const login = async (req, res) => {
                 const token = jwt.sign({
                     Username: result[0].Username,
                     Socio_id: result[0].Socio_id
-                }, secret);
+                } as CustomJwtPayload, secret);
 
                 //mandando token por el header
                 return res.status(200).json({ code: 200, message: 'Usuario autenticado', token, data: { Socio_id: result[0].Socio_id, Username: result[0].Username } });
@@ -206,18 +207,9 @@ export const recuperar_password = (req, res) => {
             const { message, code } = catch_common_error(error);
             return res.status(code).json({ code, message });
         });
-    /* 
-    
-    Prommise.all([promesa1, promesa2, promesa3])
-        .then(([res1, res2, res3]) => {
-            console.log(res1);
-        })
-        .catch((error) => {
-            console.log(error);
-        })
+}
 
-    SumaAsync(n1,n2)
-        .then((result) => {console.log(result);})
+// controlador para unirse a grupo
+export const unirse_grupo = async (req, res) => {
 
-    */
 }
