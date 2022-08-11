@@ -1,16 +1,14 @@
 import { Request } from "express";
 import { JwtPayload } from "jsonwebtoken";
 
-interface CustomRequest<BodyTemplate> extends Request {
+interface SocioRequest<BodyTemplate> extends Request {
     body: BodyTemplate,
+    id_socio_actual?: number,
 }
 
-interface SocioRequest<BodyTemplate> extends CustomRequest<BodyTemplate> {
-    id_socio_actual: number,
-}
-
-interface AdminRequest<BodyTemplate> extends SocioRequest<BodyTemplate> {
-    id_grupo_actual: number,
+interface AdminRequest<BodyTemplate> extends Request {
+    body: BodyTemplate,
+    id_grupo_actual?: number,
 }
 
 interface CommonError {

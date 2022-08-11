@@ -37,7 +37,7 @@ interface PayloadCrearPrestamos {
 }
 export const crear_prestamo = async (req: AdminRequest<PayloadCrearPrestamos>, res) => {
     const campos_prestamo = {
-        Grupo_id: req.id_grupo_actual,
+        Grupo_id: req.id_grupo_actual!,
         Lista_socios: req.body.Lista_socios 
     };
 
@@ -126,7 +126,7 @@ interface PayloadPagarPrestamos {
     }[]
 }
 export const pagar_prestamos = async (req: AdminRequest<PayloadPagarPrestamos>, res) => {
-    const Grupo_id = req.id_grupo_actual;
+    const Grupo_id = req.id_grupo_actual!;
     const { Prestamos } = req.body;
 
     try {

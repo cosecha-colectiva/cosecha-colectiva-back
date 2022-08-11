@@ -1,6 +1,6 @@
-import { NextFunction, Response } from "express";
+import { NextFunction, Request, Response } from "express";
 import jwt, { JwtPayload } from "jsonwebtoken";
-import { CustomJwtPayload, CustomRequest, SocioRequest } from "../types/misc";
+import { CustomJwtPayload, SocioRequest } from "../types/misc";
 import { secret } from "../config/config";
 import { getCommonError } from "../utils/utils";
 import { socio_es_admin } from "../services/Socios.services";
@@ -11,7 +11,7 @@ import { socio_es_admin } from "../services/Socios.services";
  * Agrega al req, el id del socio autenticado.
  * @returns respuesta con codigo 401 si el token no es válido o no hay un token.
  */
-export const authSocio = (req: SocioRequest<any>, res: Response, next: NextFunction) => {
+export const authSocio = (req: SocioRequest<any>, res, next: NextFunction) => {
     //rescatar token del header
     const token = req.header('Authorization');
     //validar que exista el token

@@ -9,7 +9,7 @@ export const crear_acuerdos = async (req: AdminRequest<Acuerdo>, res) => { //
 
     // Recoger los campos del acuerdo del body
     const campos_acuerdo: Acuerdo = {
-        Grupo_id: id_grupo_actual,
+        Grupo_id: id_grupo_actual!,
         Fecha_acuerdos: Fecha_actual(),
         Fecha_acuerdos_fin: req.body.Fecha_acuerdos_fin,
         Periodo_reuniones: req.body.Periodo_reuniones,
@@ -87,7 +87,7 @@ export const crear_acuerdos = async (req: AdminRequest<Acuerdo>, res) => { //
 //funcion para crear acuerdo secundario
 export const crear_acuerdo_secundario = async (req: AdminRequest<AcuerdoSecundario>, res) => {
     const campos_acuerdo_secundario: AcuerdoSecundario = {
-        Grupo_id: req.id_grupo_actual,
+        Grupo_id: req.id_grupo_actual!,
         Regla: req.body.Regla,
         Acuerdo: req.body.Acuerdo,
         Fecha_acuerdo: fechaActual(),

@@ -32,7 +32,7 @@ export const get_multas_por_grupo = async (req, res) => {
 
 // POST para generar una multa
 export const crear_multa = async (req: AdminRequest<Multa>, res) => {
-    const Grupo_id = req.id_grupo_actual;
+    const Grupo_id = req.id_grupo_actual!;
     const campos_multa: Multa = {
         Monto_multa: req.body.Monto_multa,
         Descripcion: req.body.Descripcion,
@@ -74,7 +74,7 @@ export const crear_multa = async (req: AdminRequest<Multa>, res) => {
 export const pagar_multas = async (req: AdminRequest<{Multas: number[]}>, res) => {
     // arreglo con los ids de las multas y el id del grupo
     const { Multas } = req.body;
-    const Grupo_id = req.id_grupo_actual;
+    const Grupo_id = req.id_grupo_actual!;
 
     if (campos_incompletos({ Multas, Grupo_id })) {
         return res.json({ code: 400, message: 'Campos incompletos' }).status(400);

@@ -234,7 +234,7 @@ export const unirse_grupo = async (req: SocioRequest<any>, res) => {
         // si el socio no esta en el grupo
         if (grupo_socio.length === 0) {
             const campos_grupo_socio: GrupoSocio = {
-                Socio_id: id_socio_actual,
+                Socio_id: id_socio_actual!,
                 Grupo_id: grupo.Grupo_id!,
                 Acciones: 0,
                 Status: 1,
