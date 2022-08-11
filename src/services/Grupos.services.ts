@@ -1,4 +1,4 @@
-import { OkPacket } from "mysql2";
+import { OkPacket, RowDataPacket } from "mysql2";
 import db from "../config/database";
 
 /**
@@ -60,4 +60,26 @@ export async function crearGrupo(grupo: Grupo) {
     const [result] = await db.query(query, [grupo]) as [OkPacket, any];
 
     return result;
+};
+
+/**
+ * Devuelve los codigos de los grupos a los que no pertenece el socio.
+ * @param Socio Objeto de tipo Socio o id del socio.
+ * @returns Array de numeros con los codigos de los grupos.
+ */
+export const grupos_sin_socio = async (Socio: Socio | number): Promise<number[]> => {
+    // Asegurarse de que Socio es numero
+    if (typeof Socio !== "number") {
+        Socio = Socio.Socio_id!;
+    }
+
+    return (await db.query(`
+    SELECT * 
+    FROM grupos 
+    WHERE grupos.Grupo_id NOT IN (
+        SELECT grupo_socio.Grupo_id 
+        FROM grupo_socio
+        WHERE grupo_socio.Socio_id = ?
+    )
+    `, [Socio]) as [RowDataPacket[], any])[0].map((row: RowDataPacket) => row.Codigo_grupo);
 }

@@ -7,6 +7,8 @@ import { CommonError } from "../types/misc";
  * @returns Un error formateado como CommonError
  */
 export const getCommonError = (error: string | CommonError | Error | any): CommonError => {
+    console.log(error);
+
     if (typeof (error) === "string") {
         return { code: 400, message: error };
     }
@@ -34,7 +36,7 @@ export const formatearFecha = function (date: Date) {
     return year + '-' + month + '-' + day;
 }
 
-export const random = (...values: any[]) => {
+export const eleccion = (...values) => {
     const num = Math.random();
 
     let index = 0;

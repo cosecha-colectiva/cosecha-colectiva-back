@@ -59,9 +59,9 @@ interface Grupo {
 
 interface GrupoSocio {
     Grupo_socio_id?: number,
-    Tipo_socio: string,
     Status?: 0 | 1 | 2, // 0 = activo, 1 = inactivo, 2 = congelado
     Acciones?: number,
+    Tipo_socio: "ADMIN" | "SOCIO" | "SUPLENTE" | "CREADOR",
     Grupo_id: number,
     Socio_id: number
 }

@@ -2,6 +2,7 @@ import bcrypt from "bcrypt";
 import db from '../config/database';
 import random from 'string-random';
 import { OkPacket } from "mysql2";
+import { RowDataPacket } from "mysql2";
 
 export const Fecha_actual = function () {
     var now = new Date();
@@ -120,7 +121,7 @@ export function aplanar_respuesta(respuesta: string) {
     return respuesta.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 }
 
-export const actualizar_password = async ( Password: string, Socio_id: number) => {
+export const actualizar_password = async (Socio_id, Password) => {
     return (await db.query(
         "Update Socios set password = ? where Socio_id = ?",
         [bcrypt.hashSync(Password, 10), Socio_id]
