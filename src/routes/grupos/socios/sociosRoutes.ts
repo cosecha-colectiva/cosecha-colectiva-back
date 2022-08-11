@@ -1,7 +1,6 @@
 import { Router } from "express";
 import { crear_multa } from "../../../controllers/multas_control";
 import { crear_prestamo } from "../../../controllers/prestamos_control";
-import { unirse_grupo } from "../../../controllers/socios_control";
 import { authAdmin } from "../../../middleware/auth";
 
 // Router empezando en /api/grupos/socios

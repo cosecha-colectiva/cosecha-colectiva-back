@@ -1,6 +1,7 @@
 import { OkPacket } from 'mysql2';
 import db from '../config/database';
-import { existe_grupo, tiene_permiso, campos_incompletos, existe_socio, catch_common_error, existe_multa, obtener_acuerdo_actual, obtener_sesion_activa, socio_en_grupo } from '../utils/validaciones';
+import { AdminRequest } from '../types/misc';
+import { existe_grupo, campos_incompletos, existe_socio, catch_common_error, existe_multa, obtener_acuerdo_actual, obtener_sesion_activa, socio_en_grupo } from '../utils/validaciones';
 
 
 export const get_multas_por_grupo = async (req, res) => {
@@ -13,9 +14,6 @@ export const get_multas_por_grupo = async (req, res) => {
     try {
         // Verificar que el grupo existe
         const { } = await existe_grupo(Grupo_id)
-        // verificar que el socio tiene permiso
-        await tiene_permiso(req.id_socio_actual, Grupo_id);
-
 
         const query = "SELECT * FROM multas WHERE Grupo_id = ? and Status = 0 order by Socio_id, Sesion_id";
         const [multas] = await db.query(query, [Grupo_id]);
@@ -33,13 +31,13 @@ export const get_multas_por_grupo = async (req, res) => {
 }
 
 // POST para generar una multa
-export const crear_multa = async (req, res) => {
-    const Grupo_id = req.body.Grupo_id;
-    const campos_multa = {
+export const crear_multa = async (req: AdminRequest<Multa>, res) => {
+    const Grupo_id = req.id_grupo_actual;
+    const campos_multa: Multa = {
         Monto_multa: req.body.Monto_multa,
         Descripcion: req.body.Descripcion,
         Socio_id: req.body.Socio_id,
-        Sesion_id: null
+        Sesion_id: -1,
     };
 
     if (campos_incompletos({ ...campos_multa, Grupo_id })) {
@@ -54,14 +52,13 @@ export const crear_multa = async (req, res) => {
         await existe_grupo(Grupo_id);
 
         // verificar que el socio tiene permiso
-        await tiene_permiso(req.id_socio_actual, Grupo_id);
 
         //FALTA VALIDAR QUE EL USUARIO PERTENEZCA A ESE GRUPO
         await socio_en_grupo(campos_multa.Socio_id, Grupo_id)
 
         // Obtener la sesion activa del grupo
         const sesion = await obtener_sesion_activa(Grupo_id);
-        campos_multa.Sesion_id = sesion.Sesion_id;
+        campos_multa.Sesion_id = sesion.Sesion_id!;
 
         const query = "INSERT INTO multas SET ?";
         await db.query(query, campos_multa);
@@ -74,9 +71,10 @@ export const crear_multa = async (req, res) => {
 }
 
 // POST para pagar una multa
-export const pagar_multas = async (req, res) => {
+export const pagar_multas = async (req: AdminRequest<{Multas: number[]}>, res) => {
     // arreglo con los ids de las multas y el id del grupo
-    const { Multas, Grupo_id } = req.body;
+    const { Multas } = req.body;
+    const Grupo_id = req.id_grupo_actual;
 
     if (campos_incompletos({ Multas, Grupo_id })) {
         return res.json({ code: 400, message: 'Campos incompletos' }).status(400);
@@ -87,7 +85,6 @@ export const pagar_multas = async (req, res) => {
         const sesion = await obtener_sesion_activa(Grupo_id);
 
         // verificar que el socio tiene permiso
-        await tiene_permiso(req.id_socio_actual, sesion.Grupo_id);
 
         // obtener id del acuerdo actual
         const acuerdo = await obtener_acuerdo_actual(sesion.Grupo_id);

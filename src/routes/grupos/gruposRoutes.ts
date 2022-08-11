@@ -5,7 +5,7 @@ import { sociosRoutes } from "./socios/sociosRoutes";
 import { acuerdosRoutes } from "./acuerdos/acuerdosRoutes";
 import { multasRoutes } from "./multas/multasRoutes";
 import { sesionesRoutes } from "./sesiones/sesionesRoutes";
-import { prestamosRoutes } from "./prestamos/prestamosRoutes";
+import { prestamosRoutes } from "./socios/prestamos/prestamosRoutes";
 
 const router = Router();
 
@@ -13,10 +13,10 @@ const router = Router();
 router.post("/", authSocio, crear_grupo);
 
 // Sub-Recursos
-router.use("/acuerdos", acuerdosRoutes);
-router.use("/multas", multasRoutes);
-router.use("/sesiones", sesionesRoutes);
-router.use("/socios", sociosRoutes);
-router.use("/prestamos", prestamosRoutes);
+router.use("/:Grupo_id/acuerdos", acuerdosRoutes);
+router.use("/:Grupo_id/multas", multasRoutes);
+router.use("/:Grupo_id/sesiones", sesionesRoutes);
+router.use("/:Grupo_id/socios", sociosRoutes);
+router.use("/:Grupo_id/prestamos", prestamosRoutes);
 
 export { router as gruposRoutes };

@@ -1,17 +1,63 @@
+import { OkPacket } from "mysql2";
 import db from "../config/database";
 
 /**
  * Devuelve un grupo en base al id o codigo del grupo.
  * @param identificador Puede ser el id o el codigo del grupo
- * @returns Objeto de tipo Grupo. TROWS COMMON ERROR
+ * @returns Objeto de tipo Grupo.
+ * @throws Si no existe el grupo con el id o el codigo.
  */
-export const existe_grupo = async (identificador: number | string) => {
-    let query = "SELECT * FROM grupos WHERE Codigo_grupo = ? or Grupo_id = ?";
-    const grupo = (await db.query(query, [identificador, identificador]))[0][0] as Grupo;
-
-    if (grupo !== undefined) {
+export const existeGrupo = async (identificador: number | string) => {
+    const grupo = await obtenerGrupo(identificador)
+    if(grupo !== undefined) {
         return grupo;
     }
 
-    throw "No existe el Grupo con el id o codigo: " + identificador;
+    throw "No existe el grupo con el id o el codigo: " + identificador;
 };
+
+/**
+ * Funcion para saber si un grupo está vacio.
+ * @param grupo Objeto de tipo Grupo, o identificador del grupo (id o codigo).
+ * @returns true si está vacio, false si no está vacio.
+ */
+export const grupoVacio = async (grupo: Grupo | number | string) => {
+    if (typeof grupo !== "number") {
+        if (typeof grupo === "string") {
+            grupo = await obtenerGrupo(grupo) as Grupo;
+        }
+
+        if (typeof grupo !== "string") {
+            grupo = grupo.Grupo_id!;
+        }
+    }
+
+    let query = "SELECT * FROM grupo_socio WHERE Grupo_id = ? and Status = 1";
+    const grupo_socio = (await db.query(query, [grupo]))[0] as GrupoSocio[];
+
+    if (grupo_socio.length == 0) {
+        return true;
+    }
+
+    return false;
+}
+
+/**
+ * Funcion para obtener un grupo en base al id o codigo del grupo.
+ * @param identificador Puede ser el id o el codigo del grupo
+ * @returns Objeto de tipo Grupo o undefined si no existe el grupo.
+ */
+
+export const obtenerGrupo = async (identificador: number | string): Promise<Grupo | undefined> => {
+    let query = "SELECT * FROM grupos WHERE Codigo_grupo = ? or Grupo_id = ?";
+    const grupo = (await db.query(query, [identificador, identificador]))[0][0] as Grupo;
+
+    return grupo;
+}
+
+export async function crearGrupo(grupo: Grupo) {
+    const query = "INSERT INTO grupo SET ?";
+    const [result] = await db.query(query, [grupo]) as [OkPacket, any];
+
+    return result;
+}

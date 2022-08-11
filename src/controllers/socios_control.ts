@@ -1,11 +1,12 @@
 import * as bcrypt from "bcrypt";
 import { node_env, secret } from "../config/config";
 import db from "../config/database";
-import { actualizar_password, aplanar_respuesta, campos_incompletos, catch_common_error, existe_pregunta, existe_socio, Fecha_actual, validar_password } from "../utils/validaciones";
+import { actualizar_password, aplanar_respuesta, campos_incompletos, catch_common_error, existe_pregunta, existe_socio, Fecha_actual, socio_en_grupo, validar_password } from "../utils/validaciones";
 import * as jwt from "jsonwebtoken";
 import { OkPacket, RowDataPacket } from "mysql2";
 import { validarCurp } from "../utils/utils";
-import { CustomJwtPayload } from "../types/misc";
+import { CustomJwtPayload, SocioRequest } from "../types/misc";
+import { existeGrupo } from "../services/Grupos.services";
 
 export const register = async (req, res, next) => {
     // Recoger los datos del body
@@ -112,12 +113,12 @@ export const preguntas_seguridad_socio = async (req, res) => {
         if (await validar_password(Socio_id, Password) || preguntas_socios.length === 0) {
             if (id_socio_actual && preguntas_socios.length !== 0) {
                 query = "UPDATE preguntas_socios SET ? where socio_id = ?";
-                await db.query(query, [{ Socio_id: id_socio_actual, Pregunta_id, Respuesta: bcrypt.hashSync(/**@type {String} */(Respuesta), 10) }, Socio_id]);
+                await db.query(query, [{ Socio_id: id_socio_actual, Pregunta_id, Respuesta: bcrypt.hashSync(Respuesta!, 10) }, Socio_id]);
                 return res.status(200).json({ code: 200, message: 'Pregunta del socio Actualizada' });
             } else {
                 if (preguntas_socios.length === 0) {
                     query = "INSERT INTO preguntas_socios (Socio_id, Pregunta_id, Respuesta) VALUES (?, ?, ?)";
-                    await db.query(query, [Socio_id, Pregunta_id, bcrypt.hashSync(/**@type {String} */(Respuesta), 10)]);
+                    await db.query(query, [Socio_id, Pregunta_id, bcrypt.hashSync(Respuesta!, 10)]);
                     return res.status(201).json({ code: 200, message: 'Pregunta del socio agregada' });
                 }
                 else {
@@ -174,6 +175,9 @@ export const login = async (req, res) => {
     }
 }
 
+export const cambiar_password = async (req, res) => {
+
+}
 
 //funcion para Recuperar Contraseña
 export const recuperar_password = (req, res) => {
@@ -210,6 +214,49 @@ export const recuperar_password = (req, res) => {
 }
 
 // controlador para unirse a grupo
-export const unirse_grupo = async (req, res) => {
+export const unirse_grupo = async (req: SocioRequest<any>, res) => {
+    const { id_socio_actual } = req;
+    const { Codigo_grupo } = req.body;
 
+    if (campos_incompletos({ Codigo_grupo })) {
+        return res.status(400).json({ code: 400, message: "campos incompletos" });
+    }
+
+    try {
+        // validar que el grupo exista
+        const grupo = await existeGrupo(Codigo_grupo);
+
+        
+
+        let query = "SELECT * FROM grupo_socio WHERE Socio_id = ? AND Grupo_id = ?";
+        const [grupo_socio] = await db.query(query, [id_socio_actual, grupo.Grupo_id]) as [GrupoSocio[], any];
+        
+        // si el socio no esta en el grupo
+        if (grupo_socio.length === 0) {
+            const campos_grupo_socio: GrupoSocio = {
+                Socio_id: id_socio_actual,
+                Grupo_id: grupo.Grupo_id!,
+                Acciones: 0,
+                Status: 1,
+                Tipo_socio: "SOCIO",
+            }
+
+            query = "INSERT INTO grupo_socio SET ?";
+            await db.query(query, campos_grupo_socio);
+            return res.status(200).json({ code: 200, message: "El socio se ha unido correctamente" });
+        }
+
+        // si el socio está inactivo en el grupo
+        if (grupo_socio[0].Status === 0) {
+            query = "UPDATE grupo_socio SET Status = 1 WHERE Socio_id = ? AND Grupo_id = ?";
+            await db.query(query, [id_socio_actual, grupo.Grupo_id]);
+            return res.status(200).json({ code: 200, message: "El socio se ha unido correctamente" });
+        }
+
+        // si el socio está activo en el grupo
+        return res.status(400).json({ code: 400, message: "El socio ya está en el grupo" });
+    } catch (error) {
+        const { message, code } = catch_common_error(error);
+        return res.status(code).json({ code, message });
+    }
 }
