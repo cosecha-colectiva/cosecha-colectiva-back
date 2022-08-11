@@ -1,5 +1,5 @@
 import { node_env } from "../config/config";
-import { CommonError } from "../Types/misc";
+import { CommonError } from "../types/misc";
 
 /**
  * Recibe un error y lo convierte en uno listo para el front
@@ -50,10 +50,7 @@ export const eleccion = (...values) => {
     return values[index];
 }
 
-export const Fecha_actual = function () {
+export const fechaActual = function () {
     var now = new Date();
-    var year = now.getFullYear();
-    var month = now.getMonth() + 1;
-    var day = now.getDate();
-    return year + '-' + month + '-' + day;
+    return formatearFecha(now);
 }
