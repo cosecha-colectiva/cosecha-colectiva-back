@@ -159,6 +159,16 @@ interface SociosPrestamo {
     message: string
     Limite_credito_disponible?: number
 }
+/**
+ * Se encarga de filtrar que socios pueden pedir prestamos, 
+ * por que razon no se podría, y si se puede, 
+ * decir cuanto se puede pedir.
+ * 
+ * @param Grupo_id El id del grupo
+ * @param lista_socios Arreglo de objetos GrupoSocio
+ * @returns Arreglo de objetos que indican si cada socio puede pedir un prestamo o no.
+ * @trhow Error si algun socio no está en el grupo
+ */
 export const prestamos_multiples = async (Grupo_id: number,  lista_socios: string | any[] | undefined) => {
     let lista_socios_prestamo: SociosPrestamo[] = []; //{{"Socio_id" : 1, "Nombres" : "Ale", "Apellidos" : "De Alvino", "puede_pedir" : 0, "message": "Ya tiene un prestamo vigente" }} ----> prestamo en 0 significa que no puede pedir prestamo, si esta en 1 es que si puede pedir un prestamo 
     if (!Grupo_id || !lista_socios) {
@@ -169,7 +179,6 @@ export const prestamos_multiples = async (Grupo_id: number,  lista_socios: strin
 
     //asegurarse que no haya excedido su limite de credito
     for (let i = 0; i < lista_socios.length; i++) {
-        await socio_en_grupo(lista_socios[i].Socio_id, Grupo_id)//tal vez esta validacion este demas
         //Buscamos todos los prestamos activos que tenga y sumamos las cantidades
         let socio = lista_socios[i];
         let query3 = "SELECT * FROM prestamos WHERE Socio_id = ? AND Estatus_prestamo = 0";

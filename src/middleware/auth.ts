@@ -1,6 +1,6 @@
 import { NextFunction, Request, Response } from "express";
 import jwt, { JwtPayload } from "jsonwebtoken";
-import { CustomJwtPayload, SocioRequest } from "../types/misc";
+import { AdminRequest, CustomJwtPayload, SocioRequest } from "../types/misc";
 import { secret } from "../config/config";
 import { getCommonError } from "../utils/utils";
 import { socio_es_admin } from "../services/Socios.services";
@@ -39,11 +39,11 @@ export const authSocio = (req: SocioRequest<any>, res, next: NextFunction) => {
  * @returns respuesta con codigo 404 si el grupo no existe.
  * @returns respuesta con codigo 500 si ocurre un error.
 */
-export const authAdmin = async (req, res, next) => {
+export const authAdmin = async (req: AdminRequest<any>, res, next) => {
     // Obtener el token del header
     const token = req.header('Authorization');
-    // Obtener el id del grupo de params
-    const id_grupo = req.params.Grupo_id;
+    // Obtener el id del grupo de params como numero
+    const Grupo_id = Number(req.params.Grupo_id);
 
     // Verificar que haya token
     if (!token) {
@@ -56,16 +56,17 @@ export const authAdmin = async (req, res, next) => {
         const id_socio = payload.Socio_id;
 
         // Validar que el socio sea administrador del grupo
-        await socio_es_admin(id_socio, id_grupo);
+        await socio_es_admin(id_socio, Grupo_id);
 
         // Agregar el id del socio actual al req
         req.id_socio_actual = id_socio;
         // Agregar el id del grupo al req
-        req.id_grupo_actual = id_grupo;
+        req.id_grupo_actual = Grupo_id;
 
         // Pasar al siguiente middleware
         next();
     } catch (err) {
+        console.log(err);
         const { code, message } = getCommonError(err);
         return res.status(code).json({ code, message });
     }

@@ -7,7 +7,7 @@ import { multasRoutes } from "./multas/multasRoutes";
 import { sesionesRoutes } from "./sesiones/sesionesRoutes";
 import { prestamosRoutes } from "./socios/prestamos/prestamosRoutes";
 
-const router = Router();
+const router = Router({ mergeParams: true });
 
 // Crear un grupo
 router.post("/", authSocio, crear_grupo);

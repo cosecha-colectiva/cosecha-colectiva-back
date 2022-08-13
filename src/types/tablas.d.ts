@@ -104,7 +104,6 @@ interface Prestamo {
     Interes_pagado: number,
     Fecha_inicial: string,
     Fecha_final: string,
-    Estatus_ampliacion: string,
     Observaciones: string,
     Num_sesiones: string,
     Sesiones_restantes: string,
@@ -112,6 +111,7 @@ interface Prestamo {
     Socio_id: number,
     Sesion_id: number,
     Acuerdos_id: number,
+    Estatus_ampliacion: 0 | 1, // 0 = no ampliado, 1 = ampliado
     Prestamo_original_id: number
 }
 

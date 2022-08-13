@@ -25,5 +25,4 @@ app.use("/api", indexRoutes);
 // Not Found
 app.use(notFound);
 
-
 export default app

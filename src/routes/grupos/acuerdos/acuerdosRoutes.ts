@@ -2,8 +2,8 @@ import { Router } from "express";
 import { crear_acuerdos, crear_acuerdo_secundario } from "../../../controllers/acuerdos_control";
 import { authAdmin } from "../../../middleware/auth";
 
-// Router empezando en /api/grupos/acuerdos
-const router = Router();
+// Router empezando en /api/grupos/:Grupo_id/acuerdos
+const router = Router({ mergeParams: true });
 
 // Crear acuerdos para un grupo
 router.post("/", authAdmin, crear_acuerdos);

@@ -1,6 +1,6 @@
 import { randBoolean, randFutureDate, randNumber, randPhrase, randText } from "@ngneat/falso"
 import db from "../../src/config/database";
-import { eleccion } from "../../src/utils/utils"
+import { eleccion, formatearFecha } from "../../src/utils/utils"
 import config from "../config"
 import { request } from "../utils/utils";
 
@@ -10,7 +10,6 @@ afterAll(async () => {
 
 describe("Crear Acuerdos", () => {
     const reqBody = {
-        Grupo_id: config.Grupo_prueba.id,
         Fecha_acuerdos_fin: randFutureDate(),
         Periodo_reuniones: eleccion(3, 4, 5, 6),
         Periodo_cargos: eleccion(3, 4, 5, 6),
@@ -44,12 +43,11 @@ describe("Crear Acuerdos", () => {
     })
 })
 
-describe.skip("Crear Acuerdos Secundarios", () => {
+describe("Crear Acuerdos Secundarios", () => {
     const reqBody = {
-        Grupo_id: config.Grupo_prueba.id,
         Regla: randPhrase(),
         Acuerdo: randText({ charCount: 100 }),
-        Fecha_acuerdo_fin: randFutureDate(),
+        Fecha_acuerdo_fin: formatearFecha(randFutureDate()),
     };
 
     const reqHeader = {
@@ -57,7 +55,7 @@ describe.skip("Crear Acuerdos Secundarios", () => {
     }
 
     it("Debería devolver Status 201 si el acuerdo secundario se creó con exito", async () => {
-        const response = await request.post("/crear_acuerdos_secundarios")
+        const response = await request.post(`/api/grupos/${config.Grupo_prueba.id}/acuerdos/secundarios`)
             .send(reqBody)
             .set(reqHeader);
 

@@ -7,7 +7,7 @@ afterAll(async () => {
     await db.end();
 });
 
-describe.skip("Grupos que no tienen al socio", () => {
+describe("Grupos que no tienen al socio", () => {
     it("should return an array of numbers", async () => {
         const grupos = await grupos_sin_socio(config.Ale.id);
         expect(grupos).toBeInstanceOf(Array);

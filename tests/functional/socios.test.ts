@@ -9,25 +9,27 @@ afterAll(async () => {
     await db.end();
 });
 
-describe.skip("Login", () => {
+describe("Login", () => {
     const reqBody = { Username: config.Javi.username, Password: config.Javi.password }
 
     it("Debería devolver un token si las credenciales son correctas", async () => {
-        const response = await request.post("/login").
-            send(reqBody);
+        const response = await request.post("/api/socios/login")
+            .send(reqBody);
+
 
         expect(response.body).toHaveProperty("token");
     })
 
     it("Debería devolver un codigo 401 si la contraseña es incorrecta", async () => {
-        const response = await request.post("/login")
+        const response = await request.post("/api/socios/login")
             .send({ ...reqBody, Password: config.Javi.password + "hola" });
+
 
         expect(response.statusCode).toBe(401);
     })
 })
 
-describe.skip("Register", () => {
+describe("Register", () => {
     const reqBody = {
         Nombres: falso.randFirstName(),
         Apellidos: falso.randLastName(),
@@ -54,7 +56,7 @@ describe.skip("Register", () => {
     }
 
     it("Debería devolver un status de 201", async () => {
-        const response = await request.post("/register")
+        const response = await request.post("/api/socios")
             .send(reqBody);
 
         expect(response.statusCode).toBe(201);
@@ -62,7 +64,7 @@ describe.skip("Register", () => {
 
 })
 
-describe.skip("Unirse a un grupo", () => {
+describe("Unirse a un grupo", () => {
     const reqBody = {
         Codigo_grupo: -1,
     }
@@ -71,18 +73,13 @@ describe.skip("Unirse a un grupo", () => {
         Authorization: config.Ale.token,
     }
 
-    it("Debería devolver un status de 201", async () => {
+    it("Debería devolver un status de 200", async () => {
         reqBody.Codigo_grupo = (await grupos_sin_socio(config.Ale.id))[0];
 
-        const response = await request.post("/agregar_socio")
+        const response = await request.post("/api/socios/grupos")
             .send(reqBody)
             .set(reqHeader);
 
-        if(response.statusCode === 400) {
-            console.log(response.body);
-            console.log(reqBody);
-        }
-
-        expect(response.statusCode).toBe(201);
+        expect(response.statusCode).toBe(200);
     })
 })

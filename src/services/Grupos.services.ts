@@ -56,7 +56,7 @@ export const obtenerGrupo = async (identificador: number | string): Promise<Grup
 }
 
 export async function crearGrupo(grupo: Grupo) {
-    const query = "INSERT INTO grupo SET ?";
+    const query = "INSERT INTO grupos SET ?";
     const [result] = await db.query(query, [grupo]) as [OkPacket, any];
 
     return result;

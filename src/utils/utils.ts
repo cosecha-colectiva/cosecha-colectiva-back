@@ -7,8 +7,6 @@ import { CommonError } from "../types/misc";
  * @returns Un error formateado como CommonError
  */
 export const getCommonError = (error: string | CommonError | Error | any): CommonError => {
-    console.log(error);
-
     if (typeof (error) === "string") {
         return { code: 400, message: error };
     }

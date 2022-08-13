@@ -4,7 +4,7 @@ import { crear_prestamo } from "../../../controllers/prestamos_control";
 import { authAdmin } from "../../../middleware/auth";
 
 // Router empezando en /api/grupos/socios
-const router = Router();
+const router = Router({mergeParams: true});
 
 // Crear multa a un socio
 router.post("/:idSocio/multas", authAdmin, crear_multa);

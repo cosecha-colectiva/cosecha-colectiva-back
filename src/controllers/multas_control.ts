@@ -1,10 +1,11 @@
 import { OkPacket } from 'mysql2';
 import db from '../config/database';
 import { AdminRequest } from '../types/misc';
+import { getCommonError } from '../utils/utils';
 import { existe_grupo, campos_incompletos, existe_socio, catch_common_error, existe_multa, obtener_acuerdo_actual, obtener_sesion_activa, socio_en_grupo } from '../utils/validaciones';
 
 
-export const get_multas_por_grupo = async (req, res) => {
+export const get_multas_activas_por_grupo = async (req, res) => {
     const { Grupo_id } = req.body;
 
     if (!Grupo_id) {
@@ -51,8 +52,6 @@ export const crear_multa = async (req: AdminRequest<Multa>, res) => {
         // Obtener el grupo (por medio de la sesion)
         await existe_grupo(Grupo_id);
 
-        // verificar que el socio tiene permiso
-
         //FALTA VALIDAR QUE EL USUARIO PERTENEZCA A ESE GRUPO
         await socio_en_grupo(campos_multa.Socio_id, Grupo_id)
 
@@ -63,9 +62,10 @@ export const crear_multa = async (req: AdminRequest<Multa>, res) => {
         const query = "INSERT INTO multas SET ?";
         await db.query(query, campos_multa);
 
-        return res.json({ code: 200, message: 'Multa creada' }).status(200);
+        return res.status(201).json({ code: 201, message: 'Multa creada' });
     } catch (error) {
-        const { message, code } = catch_common_error(error)
+        console.log(error);
+        const { message, code } = getCommonError(error)
         return res.json({ code, message }).status(code);
     }
 }

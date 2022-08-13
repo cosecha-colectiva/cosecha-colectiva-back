@@ -4,12 +4,15 @@ import db from "../config/database";
 import { actualizar_password, aplanar_respuesta, campos_incompletos, catch_common_error, existe_pregunta, existe_socio, Fecha_actual, socio_en_grupo, validar_password } from "../utils/validaciones";
 import * as jwt from "jsonwebtoken";
 import { OkPacket, RowDataPacket } from "mysql2";
-import { validarCurp } from "../utils/utils";
+import { getCommonError, validarCurp } from "../utils/utils";
 import { CustomJwtPayload, SocioRequest } from "../types/misc";
 import { existeGrupo } from "../services/Grupos.services";
+import { PoolConnection } from "mysql2/promise";
 
 export const register = async (req, res, next) => {
     // Recoger los datos del body
+    const { Pregunta_id, Respuesta } = req.body;
+
     const campos_usuario = {
         Nombres: req.body.Nombres,
         Apellidos: req.body.Apellidos,
@@ -34,60 +37,68 @@ export const register = async (req, res, next) => {
         Password: req.body.Password,
     };
 
-    //campos incompletos
-    if (campos_incompletos(campos_usuario)) {
-        res.status(400).json({ code: 400, message: 'Campos incompletos' });
-    }
-
-    //comprobar que el socio no exista
-    let query = "SELECT * FROM socios WHERE Username = ?";
-    const rows = ((await db.query(query, [campos_usuario.Username]))[0]) as Socio[];
-    if (rows.length > 0) {
-        return res.status(400).json({ code: 400, message: 'El usuario ya existe' });
-    }
-    //comprobar que el curp sea valido
-    if (!validarCurp(campos_usuario.CURP)) {
-        return res.status(400).json({ code: 400, message: 'El curp no es valido' });
-    }
-
-    //comprobar que el curp sea unico
-    query = "SELECT * FROM socios WHERE CURP = ?";
-    const curpsIguales = (await db.query(query, [campos_usuario.CURP]))[0] as RowDataPacket[];
-    if (curpsIguales.length > 0) {
-        return res.status(400).json({ code: 400, message: 'El curp ya existe' });
-    }
-
-    //comprobar que los campos esten completos
-    var BCRYPT_SALT_ROUNDS = 12   //variable para indicar los saltos a bcrypt
-    bcrypt.hash(campos_usuario.Password, BCRYPT_SALT_ROUNDS)
-        .then(async function (hashedPassword) {
-            campos_usuario.Password = hashedPassword;
-
-            let query = "INSERT INTO socios SET ?";
-            const result = ((await db.query(query, campos_usuario))[0]) as OkPacket;
-
-            //Preparando el Next:
-            const { Pregunta_id, Respuesta } = req.body;
-            req.body = {
-                Socio_id: result.insertId,
-                Password: campos_usuario.Password,
-                Pregunta_id: Pregunta_id,
-                Respuesta: Respuesta,
-            };
-
-            next();
+    try {
+        if (campos_incompletos({ ...campos_usuario, Pregunta_id, Respuesta })) {
+            throw { code: 400, message: 'Campos incompletos' };
         }
 
-        )
-        .catch(function (error) {
-            res.status(500).json({ code: 500, message: 'Algo salio mal' });
-        })
+        //comprobar que el socio no exista
+        let query = "SELECT * FROM socios WHERE Username = ?";
+        const [rows] = await db.query(query, [campos_usuario.Username]) as [RowDataPacket[], any];
 
+        if (rows.length > 0) {
+            throw { code: 400, message: 'El usuario ya existe' };
+        }
 
-    ///codigos de respuesta . . .
-    //200: usuario autenticado
-    //400: error del usuario
-    //500: error del servidor
+        //comprobar que el curp sea valido
+        if (!validarCurp(campos_usuario.CURP)) {
+            throw { code: 400, message: 'El curp no es valido' };
+        }
+
+        //comprobar que el curp sea unico
+        query = "SELECT * FROM socios WHERE CURP = ?";
+        const [curpsIguales] = await db.query(query, [campos_usuario.CURP]) as [RowDataPacket[], any];
+
+        if (curpsIguales.length > 0) {
+            throw { code: 400, message: 'El curp ya existe' };
+        }
+
+        //encriptar el password
+        campos_usuario.Password = bcrypt.hashSync(campos_usuario.Password, 10);
+
+        let con: PoolConnection = {} as PoolConnection;
+        try {
+            con = await db.getConnection();
+            await con.beginTransaction();
+
+            //insertar el socio
+            query = "INSERT INTO socios SET ?";
+            const [result] = await con.query(query, campos_usuario) as [OkPacket, any];
+
+            //insertar la pregunta
+            query = "INSERT INTO preguntas_socios SET ?";
+            const [result2] = await con.query(query, {
+                Socio_id: result.insertId,
+                Pregunta_id: Pregunta_id,
+                Respuesta: Respuesta,
+            }) as [OkPacket, any];
+
+            await con.commit();
+        } catch (error) {
+            await con.rollback();
+            throw error;
+        } finally {
+            con.release();
+        }
+
+        return res.status(201).json({ message: 'Socio creado correctamente' });
+
+    } catch (error) {
+        console.log(error);
+        const { code, message } = getCommonError(error);
+        return res.status(code).json({ code, message });
+    }
+
 }
 
 //Funcion para agregar o modificar pregunta de seguridad del socio
@@ -151,7 +162,7 @@ export const login = async (req, res) => {
         //validar que existe el usuario
         if (result.length > 0) {
             //validar que la contraseña sea correcta
-            if (bcrypt.compareSync(Password, result[0].Password)) {
+            if (await validar_password(result[0].Socio_id, Password)) {
                 //generar token
                 const token = jwt.sign({
                     Username: result[0].Username,
@@ -226,11 +237,11 @@ export const unirse_grupo = async (req: SocioRequest<any>, res) => {
         // validar que el grupo exista
         const grupo = await existeGrupo(Codigo_grupo);
 
-        
+
 
         let query = "SELECT * FROM grupo_socio WHERE Socio_id = ? AND Grupo_id = ?";
         const [grupo_socio] = await db.query(query, [id_socio_actual, grupo.Grupo_id]) as [GrupoSocio[], any];
-        
+
         // si el socio no esta en el grupo
         if (grupo_socio.length === 0) {
             const campos_grupo_socio: GrupoSocio = {

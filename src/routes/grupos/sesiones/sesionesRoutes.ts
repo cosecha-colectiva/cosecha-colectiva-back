@@ -3,7 +3,7 @@ import { crear_sesion, enviar_inasistencias_sesion, registrar_asistencias, regis
 import { authAdmin } from "../../../middleware/auth";
 
 // Router empezando en /api/grupos/sesiones
-const router = Router();
+const router = Router({ mergeParams: true });
 
 // Crear una sesion
 router.post("", authAdmin, crear_sesion);

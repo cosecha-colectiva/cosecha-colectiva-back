@@ -1,5 +1,5 @@
 import db from "../config/database";
-import { existe_prestamo, prestamo_pagable } from "../services/Prestamos.services";
+import { existe_prestamo, prestamo_es_pagable } from "../services/Prestamos.services";
 import { crear_transaccion } from "../services/Transacciones.services";
 import { getCommonError } from "../utils/utils";
 import { obtener_caja_sesion, obtener_sesion_activa } from "../services/Sesiones.services";
@@ -23,7 +23,6 @@ export const enviar_socios_prestamo = async (req, res) => {
     } else {
         return res.json({ code: 500, message: 'Error en el servidor' }).status(500);
     }
-
 }
 
 interface PayloadCrearPrestamos {
@@ -45,6 +44,15 @@ export const crear_prestamo = async (req: AdminRequest<PayloadCrearPrestamos>, r
     if (campos_incompletos(campos_prestamo)) {
         res.status(400).json({ code: 400, message: 'Campos incompletos' });
     }
+
+    // Recibir todos los campos del prestamo
+    // si campos_prestamo.Estatus_ampliacion = 0:
+        // verificar que se pueda crear el prestamo
+        // Crear un nuevo prestamo
+    // si campos_prestamo.Estatus_ampliacion = 1, entonces ampliar el prestamo
+        // verificar que se pueda ampliar el prestamo
+        // pagar el prestamo original
+        // crear el nuevo prestamo
 
     //Existe el grupo
     //Obtener la sesion activa
@@ -144,7 +152,7 @@ export const pagar_prestamos = async (req: AdminRequest<PayloadPagarPrestamos>, 
             try {
                 const { Prestamo_id, Monto_abono_interes, Monto_abono_prestamo } = pago_prestamo;
                 const prestamo = await existe_prestamo(Prestamo_id) as Prestamo;
-                await prestamo_pagable(prestamo);
+                await prestamo_es_pagable(prestamo);
 
                 if (prestamo.Interes_generado >= prestamo.Interes_pagado + Monto_abono_interes) {
                     throw `Lo abonado al interés (${Monto_abono_interes}) es mayor que la deuda por interés (${prestamo.Interes_generado - prestamo.Interes_pagado})`;
