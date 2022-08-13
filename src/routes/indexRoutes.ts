@@ -1,5 +1,4 @@
 import { Router } from "express";
-import { route } from "./admin_routes";
 import { gruposRoutes } from "./grupos/gruposRoutes";
 import { sociosRoutes } from "./socios/sociosRoutes";
 
