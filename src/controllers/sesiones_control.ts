@@ -1,5 +1,5 @@
 import db from "../config/database";
-import { Fecha_actual, campos_incompletos, existe_grupo, tiene_permiso, catch_common_error, obtener_sesion_activa, existe_socio, socio_en_grupo } from "../utils/validaciones";
+import { Fecha_actual, campos_incompletos, existe_grupo, catch_common_error, obtener_sesion_activa, existe_socio, socio_en_grupo } from "../utils/validaciones";
 
 //crear nueva sesion
 export const crear_sesion = async (req, res) => {
@@ -17,9 +17,6 @@ export const crear_sesion = async (req, res) => {
     try {
         //VERIFICAR QUE EXISTE EL GRUPO
         const grupo = await existe_grupo(campos_sesion.Grupo_id);
-
-        // Verificar que el socio tiene permiso sobre el grupo
-        await tiene_permiso(req.id_socio_actual, campos_sesion.Grupo_id);
 
         // obtener caja final de la sesion anterior
         let query = "SELECT Caja, Acciones FROM sesiones WHERE Grupo_id = ? ORDER BY Fecha desc, Sesion_id desc LIMIT 1";
@@ -56,7 +53,6 @@ export const registrar_asistencias = async (req, res) => {
         // VERIFICACIONES
         // Verificar que la sesion existe
         const sesion = await obtener_sesion_activa(Grupo_id);
-        await tiene_permiso(req.id_socio_actual, Grupo_id);
 
         // verificar que la sesion no tenga asistencias ya
         let query = "select * from asistencias where Sesion_id = ?";
@@ -110,7 +106,6 @@ export const enviar_inasistencias_sesion = async (req, res) => {
     // Validar si la sesion existe y tiene permiso
     try {
         const sesion = await obtener_sesion_activa(Grupo_id);
-        await tiene_permiso(req.id_socio_actual, Grupo_id);
 
         let query = "SELECT socios.Nombres, socios.Apellidos, socios.Socio_id FROM asistencias JOIN socios ON asistencias.Socio_id = socios.Socio_id WHERE asistencias.Presente = 0 AND asistencias.Sesion_id = ?";
         const [inasistencias] = (await db.query(query, [sesion.Sesion_id]));
@@ -138,7 +133,6 @@ export const registrar_retardos = async (req, res) => {
         // VERIFICACIONES
         // Verificar que la sesion existe
         const sesion = await obtener_sesion_activa(Grupo_id);
-        await tiene_permiso(req.id_socio_actual, Grupo_id);
 
         //registrar Retardos
         const retardos_con_error: {Socio_id: number, error: string}[] = [];

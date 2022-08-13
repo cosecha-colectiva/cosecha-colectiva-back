@@ -34,7 +34,7 @@ export const formatearFecha = function (date: Date) {
     return year + '-' + month + '-' + day;
 }
 
-export const random = (...values) => {
+export const eleccion = (...values) => {
     const num = Math.random();
 
     let index = 0;
@@ -46,4 +46,9 @@ export const random = (...values) => {
     })
 
     return values[index];
+}
+
+export const fechaActual = function () {
+    var now = new Date();
+    return formatearFecha(now);
 }

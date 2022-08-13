@@ -27,12 +27,13 @@ export const existe_prestamo = async (Prestamo_id: number): Promise<Prestamo> =>
  * @param Prestamo Puede ser el id del prestamo, o un objeto tipo prestamo.
  * @returns Retorna true si el prestamo es pagable. Si no es pagable TRHOWS COMMON ERROR.
  */
-export const prestamo_pagable = async (Prestamo: number | Prestamo): Promise<boolean> => {
+export const prestamo_es_pagable = async (Prestamo: number | Prestamo): Promise<boolean> => {
     if (typeof Prestamo === "number") {
         Prestamo = await existe_prestamo(Prestamo) as Prestamo;
     }
 
-    if (Prestamo.Estatus_prestamo === 0) return true;
+    if (Prestamo.Estatus_prestamo !== 0)
+        throw "El prestamo con id " + Prestamo.Prestamo_id + " no es pagable (estatus = 0). Estatus: " + Prestamo.Estatus_prestamo;
 
-    throw "El prestamo con id " + Prestamo.Prestamo_id + " no es pagable (estatus = 0). Estatus: " + Prestamo.Estatus_prestamo;
+    return true;
 }

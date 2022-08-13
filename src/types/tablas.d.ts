@@ -3,7 +3,7 @@ interface Acuerdo {
     Grupo_id: number,
     Fecha_acuerdos: string,
     Fecha_acuerdos_fin: string,
-    Status: string,
+    Status: 1 | 0,
     Periodo_reuniones: string,
     Periodo_cargos: string,
     Limite_inasistencias: string,
@@ -15,7 +15,7 @@ interface Acuerdo {
     Creditos_simultaneos: string,
     Interes_morosidad: string,
     Ampliacion_prestamos: 0 | 1,
-    Interes_ampliacion: string,
+    Interes_ampliacion: number | null,
     Mod_calculo_interes: string,
     Tasa_interes_prestamo_grande: string,
     Id_socio_administrador: string,
@@ -29,7 +29,7 @@ interface AcuerdoSecundario {
     Acuerdo: string,
     Fecha_acuerdo: string,
     Fecha_acuerdo_fin: string,
-    Status: string
+    Status: 0 | 1,
 }
 
 interface Asistencia {
@@ -54,14 +54,14 @@ interface Grupo {
     CP: string,
     Pais: string,
     Fecha_reg: string,
-    Status: string
+    Status?: string
 }
 
 interface GrupoSocio {
     Grupo_socio_id?: number,
-    Tipo_socio: string,
-    Status: string,
-    Acciones: string,
+    Status?: 0 | 1 | 2, // 0 = activo, 1 = inactivo, 2 = congelado
+    Acciones?: number,
+    Tipo_socio: "ADMIN" | "SOCIO" | "SUPLENTE" | "CREADOR",
     Grupo_id: number,
     Socio_id: number
 }
@@ -78,10 +78,10 @@ interface Multa {
     Multa_id?: number,
     Monto_multa: string,
     Descripcion: string,
-    Status: string,
+    Status?: 0 | 1, // 0 = por pagar, 1 = pagada
     Sesion_id: number,
     Socio_id: number,
-    Transaccion_id: number
+    Transaccion_id?: number
 }
 
 interface PreguntaSeguridad {
@@ -104,7 +104,6 @@ interface Prestamo {
     Interes_pagado: number,
     Fecha_inicial: string,
     Fecha_final: string,
-    Estatus_ampliacion: string,
     Observaciones: string,
     Num_sesiones: string,
     Sesiones_restantes: string,
@@ -112,6 +111,7 @@ interface Prestamo {
     Socio_id: number,
     Sesion_id: number,
     Acuerdos_id: number,
+    Estatus_ampliacion: 0 | 1, // 0 = no ampliado, 1 = ampliado
     Prestamo_original_id: number
 }
 
