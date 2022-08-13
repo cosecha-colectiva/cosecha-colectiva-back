@@ -8,7 +8,7 @@ router.use("/socios", sociosRoutes);
 router.use("/grupos", gruposRoutes);
 
 router.all("/", (req, res) => {
-    res.send(process.env)
+    res.send("Bienvenido a la API de Cosecha Colectiva");
 });
 
 export { router as indexRoutes };
