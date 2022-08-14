@@ -15,11 +15,15 @@ app.use(express.json());
 app.use(helmet());
 
 // Morgan solo en node_env = "dev"
-if(node_env === "DEV") {
+if (node_env === "DEV") {
     app.use(morgan('dev'));
 }
 
 // Rutas
+// En / redirecciona a /api
+app.use("/", (req, res) => {
+    res.redirect("/api");
+});
 app.use("/api", indexRoutes);
 
 // Not Found
