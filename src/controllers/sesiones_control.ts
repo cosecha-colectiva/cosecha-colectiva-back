@@ -1,4 +1,5 @@
 import db from "../config/database";
+import { AdminRequest } from "../types/misc";
 import { Fecha_actual, campos_incompletos, existe_grupo, catch_common_error, obtener_sesion_activa, existe_socio, socio_en_grupo } from "../utils/validaciones";
 
 //crear nueva sesion
@@ -119,9 +120,9 @@ export const enviar_inasistencias_sesion = async (req, res) => {
 
 
 //Registrar retardos
-export const registrar_retardos = async (req, res) => {
-
-    const { Grupo_id, Socios } = req.body;
+export const registrar_retardos = async (req: AdminRequest<{Retardos: number[]}>, res) => {
+    const { id_grupo_actual: Grupo_id } = req;
+    const { Retardos: Socios } = req.body;
 
     //comprobar que haya Sesion_id y Socios
     if (!Grupo_id || !Socios) {
@@ -149,7 +150,7 @@ export const registrar_retardos = async (req, res) => {
             } catch (error) {
                 const { message } = catch_common_error(error)
                 retardos_con_error.push({
-                    Socio_id: Socios[i].Socio_id,
+                    Socio_id: Socios[i],
                     error: message
                 });
             }
