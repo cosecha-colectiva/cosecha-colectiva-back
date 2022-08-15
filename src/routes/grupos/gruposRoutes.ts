@@ -5,7 +5,7 @@ import { sociosRoutes } from "./socios/sociosRoutes";
 import { acuerdosRoutes } from "./acuerdos/acuerdosRoutes";
 import { multasRoutes } from "./multas/multasRoutes";
 import { sesionesRoutes } from "./sesiones/sesionesRoutes";
-import { prestamosRoutes } from "./socios/prestamos/prestamosRoutes";
+import { prestamosRoutes } from "./prestamos/prestamosRoutes";
 
 const router = Router({ mergeParams: true });
 

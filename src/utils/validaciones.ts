@@ -140,7 +140,7 @@ export const catch_common_error = ( error: string | { code: number; message: str
     return { message: "Error interno del servidor", code: 500 };
 }
 
-export const existe_pregunta = async ( Pregunta_id: string) => {
+export const existe_pregunta = async ( Pregunta_id: number) => {
     let query = "SELECT * FROM preguntas_seguridad WHERE preguntas_seguridad_id = ?";
     const [pregunta] = await db.query(query, [Pregunta_id]) as [PreguntaSeguridad[], any];
 
