@@ -20,11 +20,12 @@ if (node_env === "DEV") {
 }
 
 // Rutas
+app.use("/api", indexRoutes);
+
 // En / redirecciona a /api
 app.use("/", (req, res) => {
     res.redirect("/api");
 });
-app.use("/api", indexRoutes);
 
 // Not Found
 app.use(notFound);
