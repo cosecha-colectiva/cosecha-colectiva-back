@@ -8,7 +8,7 @@ interface Acuerdo {
     Periodo_cargos: string,
     Limite_inasistencias: string,
     Minimo_aportacion: string,
-    Costo_acciones: string,
+    Costo_acciones: number,
     Tasa_interes: string,
     Limite_credito: number,
     Porcentaje_fondo_comun: string,
@@ -120,7 +120,7 @@ interface Sesion {
     Fecha: string,
     Activa: string,
     Caja: number,
-    Acciones: string,
+    Acciones: number,
     Grupo_id: number
 }
 
