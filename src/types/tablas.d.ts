@@ -107,7 +107,7 @@ interface Prestamo {
     Observaciones: string,
     Num_sesiones: string,
     Sesiones_restantes: string,
-    Estatus_prestamo: 0 | 1 | 2 | 3,
+    Estatus_prestamo: 0 | 1 | 2 | 3, // 0 = activo, 1 = pagado, 2 = congelado, 3 = cancelado
     Socio_id: number,
     Sesion_id: number,
     Acuerdos_id: number,

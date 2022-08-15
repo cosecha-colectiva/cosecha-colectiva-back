@@ -126,7 +126,7 @@ export const crear_prestamo = async (req: AdminRequest<PayloadCrearPrestamos>, r
 
 }
 
-interface PayloadPagarPrestamos {
+export interface PayloadPagarPrestamos {
     Prestamos: {
         Prestamo_id: number,
         Monto_abono_prestamo: number,
