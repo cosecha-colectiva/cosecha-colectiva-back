@@ -4,7 +4,7 @@ interface Acuerdo {
     Fecha_acuerdos: string,
     Fecha_acuerdos_fin: string,
     Status: 1 | 0,
-    Periodo_reuniones: string,
+    Periodo_reuniones: number, // en semanas
     Periodo_cargos: string,
     Limite_inasistencias: string,
     Minimo_aportacion: string,
@@ -105,14 +105,14 @@ interface Prestamo {
     Fecha_inicial: string,
     Fecha_final: string,
     Observaciones: string,
-    Num_sesiones: string,
-    Sesiones_restantes: string,
+    Num_sesiones: number,
+    Sesiones_restantes: number,
     Estatus_prestamo: 0 | 1 | 2 | 3, // 0 = activo, 1 = pagado, 2 = congelado, 3 = cancelado
     Socio_id: number,
     Sesion_id: number,
     Acuerdos_id: number,
     Estatus_ampliacion: 0 | 1, // 0 = no ampliado, 1 = ampliado
-    Prestamo_original_id: number
+    Prestamo_original_id: number | null,
 }
 
 interface Sesion {

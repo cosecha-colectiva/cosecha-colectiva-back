@@ -53,3 +53,15 @@ export const fechaActual = function () {
     var now = new Date();
     return formatearFecha(now);
 }
+
+// Funcion para saber si un json tiene campos como undefined
+export const camposIncompletos = ( objeto: object) => {
+    for (let key in objeto) {
+        if (objeto[key] === undefined) {
+            console.log(key);
+            return true;
+        }
+    }
+
+    return false;
+}

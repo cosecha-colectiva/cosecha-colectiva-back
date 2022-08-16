@@ -15,8 +15,6 @@ export const comprar_acciones = async (Socio_id, Grupo_id, Cantidad) => {
     if (Cantidad % costo_accion !== 0) {
         throw `La cantidad de acciones no es divisible por el costo de una accion(${costo_accion})`;
     }
-
-    
 }
 
 /**

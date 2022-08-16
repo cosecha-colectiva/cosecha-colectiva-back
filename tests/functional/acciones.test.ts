@@ -24,6 +24,10 @@ describe("Compra de acciones", () => {
             .send(reqBody)
             .set(reqHeader);
 
+        if( response.status !== 201 ) {
+            console.log(response.body);
+        }
+
         expect(response.statusCode).toEqual(201);
     }, 5000);
 });
@@ -37,6 +41,7 @@ describe("Obtener costo de accion", () => {
         const response = await request.get(`/api/grupos/${config.Grupo_prueba.id}/acciones/costo`)
             .set(reqHeader);
 
+            
         expect(response.statusCode).toEqual(200);
         expect(response.body.data?.Costo).not.toBeUndefined();
     }, 5000);

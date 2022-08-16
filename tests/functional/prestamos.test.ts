@@ -1,8 +1,7 @@
 // Tests para el recurso "Prestamos"
 
 import db from "../../src/config/database";
-import { PayloadPagarPrestamos } from "../../src/controllers/prestamos_control";
-import { obtener_prestamos_ampliables } from "../../src/services/Prestamos.services";
+import { obtener_prestamos_ampliables, obtener_prestamos_pagables } from "../../src/services/Prestamos.services";
 import { eleccion } from "../../src/utils/utils";
 import config from "../config";
 import { request } from "../utils/utils";
@@ -13,7 +12,7 @@ afterAll(async () => {
 
 // Crear un prestamo
 // POST /api/grupos/:Grupo_id/socios/:Socio_id/prestamos
-describe("Generar Nuevo Prestamo", () => {
+describe.skip("Generar Nuevo Prestamo", () => {
     const reqHeader = {
         Authorization: config.Javi.token,
     }
@@ -58,13 +57,12 @@ describe("Pagar Prestamos", () => {
     }
     
     it("Debería devolver Status 200 si los prestamos se pagaron con exito", async () => {
-        const prestamos = await obtener_prestamos_ampliables(config.Grupo_prueba.id, config.Javi.id);
-        const reqBody: PayloadPagarPrestamos = {
+        const prestamos = await obtener_prestamos_pagables(config.Grupo_prueba.id, config.Javi.id);
+        const reqBody = {
             Prestamos: [
                 {
                     Prestamo_id: eleccion(...prestamos.map(p => p.Prestamo_id)),
-                    Monto_abono_interes: 10,
-                    Monto_abono_prestamo: 20,
+                    Monto_abono: 20
                 }
             ]
         };
@@ -74,5 +72,5 @@ describe("Pagar Prestamos", () => {
             .set(reqHeader);
 
         expect(response.statusCode).toEqual(200);
-    }, 5000);
+    });
 });

@@ -6,6 +6,7 @@ import { acuerdosRoutes } from "./acuerdos/acuerdosRoutes";
 import { multasRoutes } from "./multas/multasRoutes";
 import { sesionesRoutes } from "./sesiones/sesionesRoutes";
 import { prestamosRoutes } from "./prestamos/prestamosRoutes";
+import { accionesRoutes } from "./acciones/accionesRoutes";
 
 const router = Router({ mergeParams: true });
 
@@ -18,5 +19,6 @@ router.use("/:Grupo_id/multas", multasRoutes);
 router.use("/:Grupo_id/sesiones", sesionesRoutes);
 router.use("/:Grupo_id/socios", sociosRoutes);
 router.use("/:Grupo_id/prestamos", prestamosRoutes);
+router.use("/:Grupo_id/acciones", accionesRoutes);
 
 export { router as gruposRoutes };
