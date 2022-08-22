@@ -7,6 +7,7 @@ import { CommonError } from "../types/misc";
  * @returns Un error formateado como CommonError
  */
 export const getCommonError = (error: string | CommonError | Error | any): CommonError => {
+    console.log(error);
     if (typeof (error) === "string") {
         return { code: 400, message: error };
     }
@@ -34,7 +35,7 @@ export const formatearFecha = function (date: Date) {
     return year + '-' + month + '-' + day;
 }
 
-export const random = (...values) => {
+export const eleccion = (...values) => {
     const num = Math.random();
 
     let index = 0;
@@ -46,4 +47,21 @@ export const random = (...values) => {
     })
 
     return values[index];
+}
+
+export const fechaActual = function () {
+    var now = new Date();
+    return formatearFecha(now);
+}
+
+// Funcion para saber si un json tiene campos como undefined
+export const camposIncompletos = ( objeto: object) => {
+    for (let key in objeto) {
+        if (objeto[key] === undefined) {
+            console.log(key);
+            return true;
+        }
+    }
+
+    return false;
 }

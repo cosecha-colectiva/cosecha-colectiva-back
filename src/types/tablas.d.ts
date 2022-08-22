@@ -3,19 +3,19 @@ interface Acuerdo {
     Grupo_id: number,
     Fecha_acuerdos: string,
     Fecha_acuerdos_fin: string,
-    Status: string,
-    Periodo_reuniones: string,
+    Status: 1 | 0,
+    Periodo_reuniones: number, // en semanas
     Periodo_cargos: string,
     Limite_inasistencias: string,
     Minimo_aportacion: string,
-    Costo_acciones: string,
+    Costo_acciones: number,
     Tasa_interes: string,
     Limite_credito: number,
     Porcentaje_fondo_comun: string,
     Creditos_simultaneos: string,
     Interes_morosidad: string,
     Ampliacion_prestamos: 0 | 1,
-    Interes_ampliacion: string,
+    Interes_ampliacion: number | null,
     Mod_calculo_interes: string,
     Tasa_interes_prestamo_grande: string,
     Id_socio_administrador: string,
@@ -29,7 +29,7 @@ interface AcuerdoSecundario {
     Acuerdo: string,
     Fecha_acuerdo: string,
     Fecha_acuerdo_fin: string,
-    Status: string
+    Status: 0 | 1,
 }
 
 interface Asistencia {
@@ -54,14 +54,14 @@ interface Grupo {
     CP: string,
     Pais: string,
     Fecha_reg: string,
-    Status: string
+    Status?: string
 }
 
 interface GrupoSocio {
     Grupo_socio_id?: number,
-    Tipo_socio: string,
-    Status: string,
-    Acciones: string,
+    Status?: 0 | 1 | 2, // 0 = activo, 1 = inactivo, 2 = congelado
+    Acciones?: number,
+    Tipo_socio: "ADMIN" | "SOCIO" | "SUPLENTE" | "CREADOR",
     Grupo_id: number,
     Socio_id: number
 }
@@ -78,10 +78,10 @@ interface Multa {
     Multa_id?: number,
     Monto_multa: string,
     Descripcion: string,
-    Status: string,
+    Status?: 0 | 1, // 0 = por pagar, 1 = pagada
     Sesion_id: number,
     Socio_id: number,
-    Transaccion_id: number
+    Transaccion_id?: number
 }
 
 interface PreguntaSeguridad {
@@ -104,15 +104,15 @@ interface Prestamo {
     Interes_pagado: number,
     Fecha_inicial: string,
     Fecha_final: string,
-    Estatus_ampliacion: string,
     Observaciones: string,
-    Num_sesiones: string,
-    Sesiones_restantes: string,
-    Estatus_prestamo: 0 | 1 | 2 | 3,
+    Num_sesiones: number,
+    Sesiones_restantes: number,
+    Estatus_prestamo: 0 | 1 | 2 | 3, // 0 = activo, 1 = pagado, 2 = congelado, 3 = cancelado
     Socio_id: number,
     Sesion_id: number,
     Acuerdos_id: number,
-    Prestamo_original_id: number
+    Estatus_ampliacion: 0 | 1, // 0 = no ampliado, 1 = ampliado
+    Prestamo_original_id: number | null,
 }
 
 interface Sesion {
@@ -120,7 +120,7 @@ interface Sesion {
     Fecha: string,
     Activa: string,
     Caja: number,
-    Acciones: string,
+    Acciones: number,
     Grupo_id: number
 }
 

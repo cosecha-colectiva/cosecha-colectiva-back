@@ -6,11 +6,11 @@ import config from "../config";
 
 const request = supertest(app);
 
-afterAll(() => {
-    db.end();
+afterAll(async () => {
+    await db.end();
 });
 
-describe.skip("Validar Password", () => {
+describe("Validar Password", () => {
     it("should be valid", async () => {
         expect(await validar_password(config.Javi.id, config.Javi.password)).toBe(true);
     });
