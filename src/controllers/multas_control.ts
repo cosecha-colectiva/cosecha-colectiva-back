@@ -37,7 +37,7 @@ export const crear_multa = async (req: AdminRequest<Multa>, res) => {
     const campos_multa: Multa = {
         Monto_multa: req.body.Monto_multa,
         Descripcion: req.body.Descripcion,
-        Socio_id: req.body.Socio_id,
+        Socio_id: Number(req.params.Socio_id),
         Sesion_id: -1,
     };
 

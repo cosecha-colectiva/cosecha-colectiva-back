@@ -12,7 +12,7 @@ export const crear_sesion = async (req, res) => {
     }
 
     if (campos_incompletos(campos_sesion)) {
-        res.json({ code: 400, message: 'No se envio el id del grupo' }).status(400);
+        return res.json({ code: 400, message: 'No se envio el id del grupo' }).status(400);
     }
 
     try {

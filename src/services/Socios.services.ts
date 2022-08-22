@@ -15,7 +15,7 @@ import { existeGrupo, grupoVacio } from "./Grupos.services";
  */
 export const socio_es_admin = async (Socio_id: number, Grupo_id: number) => {
     // Verificar que el socio existe
-    await existe_socio(Socio_id);
+    await existeSocio(Socio_id);
     // Verificar que el grupo existe
     await existeGrupo(Grupo_id);
 
@@ -72,7 +72,7 @@ export async function agregarSocioGrupo(Socio_id: number, Codigo_grupo: string) 
  * @returns Objeto de tipo Socio.
  * @throws Si no existe el socio.
  */
-export const existe_socio = async (Socio: Socio | number): Promise<Socio> => {
+export const existeSocio = async (Socio: Socio | number): Promise<Socio> => {
     // Asegurarse de que Socio es numero
     if (typeof Socio !== "number") {
         Socio = Socio.Socio_id!;
@@ -113,7 +113,7 @@ export const grupos_del_socio = async (Socio: Socio | number): Promise<Grupo[]> 
  * @returns Objeto de tipo GrupoSocio.
  * @throws Si el socio no pertenece al grupo.
  */
-export const socio_en_grupo = async (Socio: Socio | number, Grupo: Grupo | number) => {
+export const socioEnGrupo = async (Socio: Socio | number, Grupo: Grupo | number) => {
     // Asegurarse de que Socio es numero
     if (typeof Socio !== "number") {
         Socio = Socio.Socio_id!;
@@ -146,7 +146,7 @@ export const validarPregunta = async (Socio: Socio | number, Pregunta_id: number
         Socio = Socio.Socio_id!;
     }
 
-    await existe_socio(Socio);
+    await existeSocio(Socio);
     await existe_pregunta(Pregunta_id);
 
     // aplanar la respuesta
@@ -169,7 +169,7 @@ export const validarPregunta = async (Socio: Socio | number, Pregunta_id: number
  * @throws Error si el socio no existe o el password es incorrecto
  */
 export const validarPassword = async (Socio_id: number, Password: string) => {
-    const socio = await existe_socio(Socio_id);
+    const socio = await existeSocio(Socio_id);
     const password_es_correcto = compareSync(Password, socio.Password);
 
     if (!password_es_correcto) {
@@ -187,7 +187,7 @@ export const validarPassword = async (Socio_id: number, Password: string) => {
  * @throws Error si el socio no existe
  */
 export const actualizaPassword = async (Socio_id: number, Password: string) => {
-    const socio = await existe_socio(Socio_id);
+    const socio = await existeSocio(Socio_id);
     Password = hashSync(Password, 10);
 
     const query = "UPDATE socios SET Password = ? WHERE Socio_id = ?";
@@ -227,7 +227,7 @@ export const actualizaPreguntaSocio = async (preguntaSocio: PreguntaSocio, con?:
         con = db;
     }
 
-    const socio = await existe_socio(preguntaSocio.Socio_id);
+    const socio = await existeSocio(preguntaSocio.Socio_id);
     const pregunta = await existe_pregunta(preguntaSocio.Pregunta_id);
 
     // Aplanar la respuesta

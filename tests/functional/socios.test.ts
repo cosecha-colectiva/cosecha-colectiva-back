@@ -91,13 +91,17 @@ describe("Unirse a un grupo", () => {
     }
 
     it("Debería devolver un status de 200", async () => {
-        reqBody.Codigo_grupo = (await existeGrupo((await grupos_sin_socio(config.Ale.id))[0] as number) as {Codigo_grupo: string}).Codigo_grupo;
+        reqBody.Codigo_grupo = (await existeGrupo((await grupos_sin_socio(config.Lau.id))[0] as number) as {Codigo_grupo: string}).Codigo_grupo;
 
         const response = await request.post("/api/socios/grupos")
             .send(reqBody)
             .set(reqHeader);
 
-        expect(response.statusCode).toBe(200);
+        if(response.statusCode !== 200) {
+            console.log(response.body);
+        }
+
+        expect(response.statusCode).toBe(200)
     })
 })
 
