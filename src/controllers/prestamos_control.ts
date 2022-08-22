@@ -76,8 +76,10 @@ export const crear_prestamo = async (req, res) => {
             }
         });
     //Verificar que la cantidad que solicita no sobrepase su limite
-    campos_prestamo.Lista_socios.forEach(async(socio_general) =>{
-        Lista_socios_permiso.forEach(async(socio_permiso) =>
+    // campos_prestamo.Lista_socios.forEach(async(socio_general) =>{
+    for ( let socio_general of campos_prestamo.Lista_socios){
+        // Lista_socios_permiso.forEach(async(socio_permiso) =>
+        for ( let socio_permiso of Lista_socios_permiso)
             {
                 if(socio_general.Socio_id == socio_permiso.Socio_id ){
                     if(socio_general.cantidad_prestamo <= socio_permiso.Limite_credito_disponible ){
@@ -104,10 +106,7 @@ export const crear_prestamo = async (req, res) => {
                     }
                 }
             }
-        );
-        
-    });
-
+        }
     
 }
 
