@@ -66,3 +66,23 @@ export const enviar_costo_acciones = async (req: AdminRequest<any>, res: Respons
         return res.status(code).json({ code, message });        
     }
 }
+
+export const registrar_retiro_acciones = async (req: AdminRequest<{ Cantidad: number }>, res: Response) => {
+    // TODO: Registrar retiro de acciones
+}
+
+export const obtener_acciones_socio = async (req: AdminRequest<any>, res: Response) => {
+    const id_grupo_actual = req.id_grupo_actual;
+    const Socio_id = Number(req.params.Socio_id);
+
+    try {
+        await socioEnGrupo(Socio_id, id_grupo_actual!);
+        const query = `SELECT * FROM grupo_socio WHERE Socio_id = ? AND Grupo_id = ?`;
+        const [grupo_socios] = await db.query(query, [Socio_id, id_grupo_actual]) as [GrupoSocio[], any];
+
+        return res.status(200).json({ code: 200, message: "Acciones del socio", data: { Acciones: grupo_socios[0].Acciones } });
+    } catch (error) {
+        const { code, message } = getCommonError(error);
+        return res.status(code).json({ code, message });
+    }
+}

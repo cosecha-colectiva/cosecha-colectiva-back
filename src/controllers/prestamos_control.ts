@@ -7,6 +7,7 @@ import { obtenerAcuerdoActual } from "../services/Acuerdos.services";
 import { prestamos_multiples, campos_incompletos, Fecha_actual, obtener_acuerdos_activos } from "../utils/validaciones";
 import { AdminRequest } from "../types/misc";
 import { existeGrupo } from "../services/Grupos.services";
+import { socioEnGrupo } from "../services/Socios.services";
 
 export const enviar_socios_prestamo = async (req, res) => {
     const { Grupo_id } = req.body;
@@ -120,9 +121,9 @@ export const pagar_prestamos = async (req: AdminRequest<PayloadPagarPrestamos>, 
             const { Prestamo_id, Monto_abono } = Prestamos[pago_prestamo];
             await pagarPrestamo(Prestamo_id, Monto_abono, con);
         }
-        
+
         await con.commit();
-        
+
         res.status(200).json({ code: 200, message: 'Pagos realizados' });
     } catch (error) {
         console.log(error);
@@ -133,3 +134,42 @@ export const pagar_prestamos = async (req: AdminRequest<PayloadPagarPrestamos>, 
         con.release();
     }
 }
+
+// Controller para enviar prestamos activos de un socio en un grupo
+export const enviar_prestamos_activos = async (req: AdminRequest<any>, res) => {
+    const { id_grupo_actual } = req;
+    const Socio_id  = Number(req.params.Socio_id);
+
+    try {
+        await socioEnGrupo(Socio_id, id_grupo_actual!);
+
+        const query = `
+        SELECT prestamos.*
+        FROM prestamos
+        JOIN sesiones ON sesiones.Sesion_id = prestamos.Sesion_id
+        WHERE prestamos.Socio_id = ? -- del socio
+        AND prestamos.Estatus_prestamo = 0 -- activos
+        AND sesiones.Grupo_id = ? -- del grupo
+        `;
+        const [prestamos] = await db.query(query, [Socio_id, id_grupo_actual]) as [Prestamo[], any];
+
+        const data = prestamos.map(prestamo => {
+            return {
+                Prestamo_id: prestamo.Prestamo_id,
+                Deuda_prestamo: prestamo.Monto_prestamo - prestamo.Monto_pagado,
+                Sesiones_restantes: prestamo.Sesiones_restantes,
+                Deuda_interes: prestamo.Interes_generado - prestamo.Interes_pagado,
+                Fecha_inicial: prestamo.Fecha_inicial,
+                Observaciones: prestamo.Observaciones,
+                Estatus_ampliacion: prestamo.Estatus_ampliacion,
+            }
+        });
+        
+        return res.json({ code: 200, message: 'Prestamos obtenidos', data });
+    } catch (error) {
+        const { code, message } = getCommonError(error);
+        return res.status(code).json({ code, message });
+    }
+}
+
+// TODO: Controller para enviar el "Saldo total en prestamos" de un socio

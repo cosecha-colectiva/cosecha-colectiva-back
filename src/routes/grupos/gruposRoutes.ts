@@ -23,5 +23,6 @@ router.use("/:Grupo_id/acciones", accionesRoutes);
 
 // Sub-Recursos "debiles"
 router.get("/:Grupo_id/caja", enviar_caja);
+// TODO: Ruta para obtener el maximo de prestamos simultaneos
 
 export { router as gruposRoutes };

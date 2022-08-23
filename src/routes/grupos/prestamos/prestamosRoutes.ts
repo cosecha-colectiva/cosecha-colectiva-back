@@ -2,7 +2,7 @@ import { Router } from "express";
 import { pagar_prestamos } from "../../../controllers/prestamos_control";
 import { authAdmin } from "../../../middleware/auth";
 
-// Router empezando en /api/grupos/prestamos
+// Router empezando en /api/grupos/:Grupo_id/prestamos
 const router = Router({ mergeParams: true });
 
 // Pagar prestamos

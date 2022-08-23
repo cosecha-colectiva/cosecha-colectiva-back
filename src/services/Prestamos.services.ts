@@ -144,3 +144,6 @@ export const pagarPrestamo = async (Prestamo_id: number, Monto_abono: number, co
     query = "Update prestamos SET Interes_pagado = ?, Monto_pagado = ?, Estatus_prestamo = ? WHERE Prestamo_id = ?";
     await con.query(query, [prestamo.Interes_pagado, prestamo.Monto_pagado, prestamo.Estatus_prestamo, Prestamo_id]);
 }
+
+// Enviar total de saldo a pagar de un socio en un grupo
+// TODO: funcion para calcular total de saldo a pagar de un socio en un grupo

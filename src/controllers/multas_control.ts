@@ -1,33 +1,38 @@
 import { OkPacket } from 'mysql2';
 import db from '../config/database';
+import { obtener_sesion } from '../services/Sesiones.services';
 import { AdminRequest } from '../types/misc';
 import { getCommonError } from '../utils/utils';
 import { existe_grupo, campos_incompletos, existe_socio, catch_common_error, existe_multa, obtener_acuerdo_actual, obtener_sesion_activa, socio_en_grupo } from '../utils/validaciones';
 
 
-export const get_multas_activas_por_grupo = async (req, res) => {
-    const { Grupo_id } = req.body;
+export const enviar_multas_activas_socio = async (req: AdminRequest<any>, res) => {
+    const id_grupo_actual = req.id_grupo_actual;
+    const Socio_id = Number(req.params.Socio_id);
 
-    if (!Grupo_id) {
+    if (!id_grupo_actual) {
         return res.json({ code: 400, message: 'Campos incompletos' }).status(400);
     }
 
     try {
-        // Verificar que el grupo existe
-        const { } = await existe_grupo(Grupo_id)
+        await socio_en_grupo(id_grupo_actual, Socio_id);
 
-        const query = "SELECT * FROM multas WHERE Grupo_id = ? and Status = 0 order by Socio_id, Sesion_id";
-        const [multas] = await db.query(query, [Grupo_id]);
+        const query = "SELECT * FROM multas WHERE Grupo_id = ? and Socio_id = ? and Status = 0";
+        const [multas] = await db.query(query, [id_grupo_actual]) as [Multa[], any];
 
-        return res.json({ code: 200, message: 'Multas obtenidas', data: multas }).status(200);
+        const data = await Promise.all(multas.map(async multa => {
+            return {
+                Multa_id: multa.Multa_id,
+                Monto_multa: multa.Monto_multa,
+                Descripcion: multa.Descripcion,
+                Fecha:( await obtener_sesion(multa.Sesion_id))?.Fecha,
+            }
+        }))
+
+        return res.json({ code: 200, message: 'Multas obtenidas', data }).status(200);
     } catch (error) {
-        if (typeof (error) == "string") {
-            // enviar mensaje de error
-            return res.status(400).json({ code: 400, message: error });
-        }
-
-        console.log(error);
-        return res.status(500).json({ code: 500, message: 'Error en el servidor' });
+        const { code, message } = getCommonError(error);
+        return res.json({ code, message }).status(code);
     }
 }
 
