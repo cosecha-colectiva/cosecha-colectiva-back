@@ -99,7 +99,7 @@ export const register = async (req, res, next) => {
 
 //Funcion para enviar las preguntas de seguridad
 export const enviar_preguntas_seguridad = async (req, res) => {
-
+    // TODO: Enviar las preguntas de seguridad
 }
 
 export const cambiar_pregunta_seguridad = async (req: SocioRequest<any>, res) => {
