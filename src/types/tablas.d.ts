@@ -121,6 +121,7 @@ interface Sesion {
     Activa: string,
     Caja: number,
     Acciones: number,
+    Ganancias: number,
     Grupo_id: number
 }
 

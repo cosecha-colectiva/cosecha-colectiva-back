@@ -124,6 +124,10 @@ export const pagar_multas = async (req: AdminRequest<{Multas: number[]}>, res) =
                 query = "UPDATE sesiones SET Caja = ? WHERE Sesion_id = ?";
                 await db.query(query, [campos_transaccion.Caja, campos_transaccion.Sesion_id]);
 
+                // Registrar ganancias
+                query = "update sesiones set Ganancias = Ganancias + ? where Sesion_id = ?";
+                await db.query(query, [multa.Monto_multa, sesion.Sesion_id]);
+
             } catch (error) { // cacha las multas con error
                 multas_con_error.push({
                     Multa_id,

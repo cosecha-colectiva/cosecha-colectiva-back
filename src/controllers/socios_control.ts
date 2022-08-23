@@ -1,14 +1,14 @@
 import * as bcrypt from "bcrypt";
-import { node_env, secret } from "../config/config";
+import { secret } from "../config/config";
 import db from "../config/database";
-import { aplanar_respuesta, campos_incompletos, catch_common_error, existe_pregunta, existe_socio, Fecha_actual, validar_password } from "../utils/validaciones";
+import { campos_incompletos, catch_common_error, existe_socio, Fecha_actual, validar_password } from "../utils/validaciones";
 import * as jwt from "jsonwebtoken";
 import { OkPacket, RowDataPacket } from "mysql2";
 import { getCommonError, validarCurp } from "../utils/utils";
 import { CustomJwtPayload, SocioRequest } from "../types/misc";
 import { existeGrupo } from "../services/Grupos.services";
 import { PoolConnection } from "mysql2/promise";
-import { actualizaPassword, actualizaPreguntaSocio, crearPreguntaSocio, validarPassword, validarPregunta } from "../services/Socios.services";
+import { actualizaPassword, actualizaPreguntaSocio, crearPreguntaSocio, validarPregunta } from "../services/Socios.services";
 
 export const register = async (req, res, next) => {
     // Recoger los datos del body

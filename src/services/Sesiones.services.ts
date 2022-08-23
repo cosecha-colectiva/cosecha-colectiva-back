@@ -44,3 +44,22 @@ export const obtener_caja_sesion = async (sesion: number | Sesion) => {
 
     return sesion.Caja;
 }
+
+/**
+ * Verifica si existe una sesion
+ * @param Sesion_id Id de la sesion a verificar.
+ * @returns Objeto de tipo Sesion.
+ * @throws Si no existe una sesion con el id dado.
+ */
+export const existeSesion = async (Sesion_id: number) => {
+    const sesion = (await db.query(
+        "Select * From sesiones where Sesion_id = ?",
+        Sesion_id
+    ))[0][0] as Sesion;
+
+    if (sesion !== undefined) {
+        return sesion;
+    }
+
+    throw { code: 400, message: "No existe una sesion con el id " + Sesion_id };
+}

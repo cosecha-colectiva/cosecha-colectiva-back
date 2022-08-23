@@ -143,4 +143,10 @@ export const pagarPrestamo = async (Prestamo_id: number, Monto_abono: number, co
 
     query = "Update prestamos SET Interes_pagado = ?, Monto_pagado = ?, Estatus_prestamo = ? WHERE Prestamo_id = ?";
     await con.query(query, [prestamo.Interes_pagado, prestamo.Monto_pagado, prestamo.Estatus_prestamo, Prestamo_id]);
+
+    // Agregar ganancia a la sesion
+    query = "Update sesiones SET Ganancias = Ganancias + ? WHERE Sesion_id = ?";
+    const result = await con.query(query, [Monto_abono_interes, prestamo.Sesion_id]) as [OkPacket, any];
+    console.log(`Update sesiones SET Ganancias = Ganancias + ${Monto_abono_interes} WHERE Sesion_id = ${prestamo.Sesion_id}`);
+    console.log(result);
 }
