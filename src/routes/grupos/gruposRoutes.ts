@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { crear_grupo } from "../../controllers/grupos_control";
+import { crear_grupo, enviar_caja } from "../../controllers/grupos_control";
 import { authSocio } from "../../middleware/auth";
 import { sociosRoutes } from "./socios/sociosRoutes";
 import { acuerdosRoutes } from "./acuerdos/acuerdosRoutes";
@@ -20,5 +20,8 @@ router.use("/:Grupo_id/sesiones", sesionesRoutes);
 router.use("/:Grupo_id/socios", sociosRoutes);
 router.use("/:Grupo_id/prestamos", prestamosRoutes);
 router.use("/:Grupo_id/acciones", accionesRoutes);
+
+// Sub-Recursos "debiles"
+router.get("/:Grupo_id/caja", enviar_caja);
 
 export { router as gruposRoutes };

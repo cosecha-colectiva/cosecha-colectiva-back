@@ -9,7 +9,7 @@ const router = Router();
 router.use("/socios", sociosRoutes);
 router.use("/grupos", gruposRoutes);
 
-// Otros Recursos
+// Recursos "debiles"
 router.get("/preguntas", enviar_preguntas_seguridad);
 
 // Otras rutas
