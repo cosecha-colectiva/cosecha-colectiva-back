@@ -1,5 +1,8 @@
-import { OkPacket, RowDataPacket } from "mysql2";
+import { compareSync, hashSync } from "bcrypt";
+import { OkPacket, PoolConnection, RowDataPacket } from "mysql2";
+import { Connection, Pool } from "mysql2/promise";
 import db from "../config/database";
+import { aplanar_respuesta, existe_pregunta } from "../utils/validaciones";
 import { existeGrupo, grupoVacio } from "./Grupos.services";
 
 /**
@@ -8,21 +11,18 @@ import { existeGrupo, grupoVacio } from "./Grupos.services";
  * @param Socio_id id del socio a verificar.
  * @param Grupo_id id del grupo a verificar.
  * @returns true si el socio es administrador del grupo
- * @throws Si ocurre un error.
- * @throws Si el socio no existe.
- * @throws Si el grupo no existe.
  * @throws Si el socio no es administrador del grupo.
  */
 export const socio_es_admin = async (Socio_id: number, Grupo_id: number) => {
     // Verificar que el socio existe
-    await existe_socio(Socio_id);
+    await existeSocio(Socio_id);
     // Verificar que el grupo existe
     await existeGrupo(Grupo_id);
 
     // Consultar si el socio es administrador del grupo
     const query = "SELECT * FROM grupo_socio WHERE grupo_socio.Grupo_id = ? AND grupo_socio.Socio_id = ? AND grupo_socio.Tipo_socio = 'ADMIN'";
     const [rows] = (await db.query(query, [Grupo_id, Socio_id]) as [GrupoSocio[], any]);
-    
+
     // Si el socio no es administrador del grupo, lanzar error
     if (rows.length === 0) {
         throw "El socio no es administrador del grupo";
@@ -72,7 +72,7 @@ export async function agregarSocioGrupo(Socio_id: number, Codigo_grupo: string) 
  * @returns Objeto de tipo Socio.
  * @throws Si no existe el socio.
  */
-export const existe_socio = async (Socio: Socio | number): Promise<Socio> => {
+export const existeSocio = async (Socio: Socio | number): Promise<Socio> => {
     // Asegurarse de que Socio es numero
     if (typeof Socio !== "number") {
         Socio = Socio.Socio_id!;
@@ -113,7 +113,7 @@ export const grupos_del_socio = async (Socio: Socio | number): Promise<Grupo[]> 
  * @returns Objeto de tipo GrupoSocio.
  * @throws Si el socio no pertenece al grupo.
  */
-export const socio_en_grupo = async (Socio: Socio | number, Grupo: Grupo | number) => {
+export const socioEnGrupo = async (Socio: Socio | number, Grupo: Grupo | number) => {
     // Asegurarse de que Socio es numero
     if (typeof Socio !== "number") {
         Socio = Socio.Socio_id!;
@@ -130,4 +130,111 @@ export const socio_en_grupo = async (Socio: Socio | number, Grupo: Grupo | numbe
     }
 
     return result[0] as GrupoSocio;
+}
+
+/**
+ * Comprueba que la pregunta de seguridad sea correcta.
+ * @param Socio Objeto de tipo Socio o id del socio.
+ * @param Pregunta_id id de la pregunta de seguridad.
+ * @param Respuesta respuesta de la pregunta de seguridad.
+ * @returns True si la respuesta es correcta.
+ * @throws Si la respuesta es incorrecta.
+ */
+export const validarPregunta = async (Socio: Socio | number, Pregunta_id: number, Respuesta: string) => {
+    // Asegurarse de que Socio es numero
+    if (typeof Socio !== "number") {
+        Socio = Socio.Socio_id!;
+    }
+
+    await existeSocio(Socio);
+    await existe_pregunta(Pregunta_id);
+
+    // aplanar la respuesta
+    Respuesta = aplanar_respuesta(Respuesta);
+
+    const query = "SELECT * FROM preguntas_socios WHERE Socio_id = ? AND Pregunta_id = ?";
+    const [preguntas_socios] = await db.query(query, [Socio, Pregunta_id]) as [PreguntaSocio[], any];
+    const respuesta_es_correcta = compareSync(Respuesta, preguntas_socios[0]?.Respuesta);
+
+    if (!respuesta_es_correcta) {
+        throw "Pregunta y/o Respuesta incorrectas";
+    }
+}
+
+/**
+ * Valida que el Password sea correcto
+ * @param Socio_id El id del socio
+ * @param Password Password del socio
+ * @returns True si el socio existe y su password es correcto
+ * @throws Error si el socio no existe o el password es incorrecto
+ */
+export const validarPassword = async (Socio_id: number, Password: string) => {
+    const socio = await existeSocio(Socio_id);
+    const password_es_correcto = compareSync(Password, socio.Password);
+
+    if (!password_es_correcto) {
+        throw "Password incorrecto";
+    }
+
+    return true;
+}
+
+/**
+ * Funcion para actualizar el password del socio
+ * @param Socio_id El id del socio
+ * @param Password El nuevo password del socio
+ * @returns Un objeto de tipo OkPacket
+ * @throws Error si el socio no existe
+ */
+export const actualizaPassword = async (Socio_id: number, Password: string) => {
+    const socio = await existeSocio(Socio_id);
+    Password = hashSync(Password, 10);
+
+    const query = "UPDATE socios SET Password = ? WHERE Socio_id = ?";
+    const [result] = await db.query(query, [Password, Socio_id]) as [OkPacket, any];
+
+    return result;
+}
+
+/**
+ * Funcion para crear una pregunta de seguridad para un socio
+ * @param preguntaSocio Objeto de tipo PreguntaSocio
+ * @returns Un objeto de tipo OkPacket
+ */
+export const crearPreguntaSocio = async (preguntaSocio: PreguntaSocio, con?: Connection | Pool) => {
+    if (con === undefined) {
+        con = db;
+    }
+
+    const pregunta = await existe_pregunta(preguntaSocio.Pregunta_id);
+
+    // aplanar la respuesta
+    preguntaSocio.Respuesta = aplanar_respuesta(preguntaSocio.Respuesta);
+
+    const query = "INSERT INTO preguntas_socios SET ?";
+    const [result] = await con.query(query, [preguntaSocio]) as [OkPacket, any];
+
+    return result;
+}
+
+/**
+ * Funcion para actualizar una pregunta de seguridad para un socio
+ * @param preguntaSocio Objeto de tipo PreguntaSocio
+ * @returns Un objeto de tipo OkPacket
+ */
+export const actualizaPreguntaSocio = async (preguntaSocio: PreguntaSocio, con?: Connection | Pool) => {
+    if (con === undefined) {
+        con = db;
+    }
+
+    const socio = await existeSocio(preguntaSocio.Socio_id);
+    const pregunta = await existe_pregunta(preguntaSocio.Pregunta_id);
+
+    // Aplanar la respuesta
+    preguntaSocio.Respuesta = aplanar_respuesta(preguntaSocio.Respuesta);
+
+    const query = "UPDATE preguntas_socios SET ? WHERE Socio_id = ?";
+    const [result] = await con.query(query, [preguntaSocio, preguntaSocio.Socio_id]) as [OkPacket, any];
+
+    return result;
 }

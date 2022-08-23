@@ -7,8 +7,6 @@ const router = Router({ mergeParams: true });
 
 // Crear una sesion
 router.post("", authAdmin, crear_sesion);
-// Registrar asistencias de la sesion activa
-router.post("/asistencias", authAdmin, registrar_asistencias);
 // Obtener inasistencias de la sesion activa
 router.get("/inasistencias", authAdmin, enviar_inasistencias_sesion );
 // Registrar retardos de la sesion activa

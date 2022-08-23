@@ -47,7 +47,6 @@ export const grupoVacio = async (grupo: Grupo | number | string) => {
  * @param identificador Puede ser el id o el codigo del grupo
  * @returns Objeto de tipo Grupo o undefined si no existe el grupo.
  */
-
 export const obtenerGrupo = async (identificador: number | string): Promise<Grupo | undefined> => {
     let query = "SELECT * FROM grupos WHERE Codigo_grupo = ? or Grupo_id = ?";
     const grupo = (await db.query(query, [identificador, identificador]))[0][0] as Grupo;

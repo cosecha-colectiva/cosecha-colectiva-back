@@ -13,6 +13,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 app.use(helmet());
+app.use(express.static("public"));
 
 // Morgan solo en node_env = "dev"
 if (node_env === "DEV") {
@@ -20,10 +21,6 @@ if (node_env === "DEV") {
 }
 
 // Rutas
-// En / redirecciona a /api
-app.use("/", (req, res) => {
-    res.redirect("/api");
-});
 app.use("/api", indexRoutes);
 
 // Not Found
