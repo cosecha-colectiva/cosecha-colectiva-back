@@ -8,7 +8,7 @@ import { getCommonError, validarCurp } from "../utils/utils";
 import { CustomJwtPayload, SocioRequest } from "../types/misc";
 import { existeGrupo } from "../services/Grupos.services";
 import { PoolConnection } from "mysql2/promise";
-import { actualizaPassword, actualizaPreguntaSocio, crearPreguntaSocio, validarPassword, validarPregunta } from "../services/Socios.services";
+import { actualizaPassword, actualizaPreguntaSocio, crearPreguntaSocio, existeSocio, grupos_del_socio, obtenerGrupoSocio, validarPassword, validarPregunta } from "../services/Socios.services";
 
 export const register = async (req, res, next) => {
     // Recoger los datos del body
@@ -242,6 +242,46 @@ export const unirse_grupo = async (req: SocioRequest<any>, res) => {
         return res.status(400).json({ code: 400, message: "El socio ya está en el grupo" });
     } catch (error) {
         const { message, code } = catch_common_error(error);
+        return res.status(code).json({ code, message });
+    }
+}
+
+// enviar info del socio actual
+export const enviar_info_socio = async (req: SocioRequest<any>, res) => {
+    const { id_socio_actual } = req;
+
+    try {
+        const socio = await existeSocio(id_socio_actual!);
+        const data = {
+            Nombres: socio.Nombres,
+            Username: socio.Username,
+        }
+        return res.status(200).json({ code: 200, message: "Información del socio", data });
+    } catch (error) {
+        const { message, code } = getCommonError(error);
+        return res.status(code).json({ code, message });
+    }
+}
+
+// Enviar info de los grupos del socio actual
+export const enviar_grupos_socio = async (req: SocioRequest<any>, res) => {
+    const { id_socio_actual } = req;
+
+    try {
+        const grupos: Grupo[] = await grupos_del_socio(id_socio_actual!);
+        const data: {Grupo_id: number, Nombre: string, Rol_socio: "ADMIN" | "SOCIO" | "SUPLENTE" | "CREADOR"}[] = [];
+        for (const grupo of grupos) {
+            data.push({
+                Grupo_id: grupo.Grupo_id!,
+                Nombre: grupo.Nombre_grupo,
+                Rol_socio: (await obtenerGrupoSocio(id_socio_actual!, grupo.Grupo_id!)).Tipo_socio,
+            });
+        }
+
+        return res.status(200).json({ code: 200, message: "Información de los grupos", data });
+            
+    } catch (error) {
+        const { message, code } = getCommonError(error);
         return res.status(code).json({ code, message });
     }
 }
