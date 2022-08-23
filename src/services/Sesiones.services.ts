@@ -1,5 +1,5 @@
 import db from "../config/database";
-import { catch_common_error, existe_socio, socio_en_grupo } from "../utils/validaciones";
+import { catch_common_error, existe_socio, obtener_sesion_activa, socio_en_grupo } from "../utils/validaciones";
 
 /**
  * Obtiene la sesion activa de un grupo si es que hay una.
