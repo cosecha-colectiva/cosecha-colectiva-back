@@ -2,6 +2,7 @@ import { Router } from "express";
 import { register, login, unirse_grupo, recuperar_password, cambiar_password, cambiar_pregunta_seguridad, enviar_info_socio, enviar_grupos_socio } from "../../controllers/socios_control";
 import { authSocio } from "../../middleware/auth";
 
+// router empezando en /api/socios/password
 const router = Router({ mergeParams: true });
 
 // Registrar un socio
