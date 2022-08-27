@@ -4,7 +4,7 @@ import db from "../config/database";
 import { aplanar_respuesta, campos_incompletos, catch_common_error, existe_pregunta, existe_socio, Fecha_actual, validar_password } from "../utils/validaciones";
 import * as jwt from "jsonwebtoken";
 import { OkPacket, RowDataPacket } from "mysql2";
-import { getCommonError, validarCurp } from "../utils/utils";
+import { getCommonError, validarCurp, validarFecha } from "../utils/utils";
 import { CustomJwtPayload, SocioRequest } from "../types/misc";
 import { existeGrupo } from "../services/Grupos.services";
 import { PoolConnection } from "mysql2/promise";
@@ -48,7 +48,7 @@ export const register = async (req, res, next) => {
         const [rows] = await db.query(query, [campos_usuario.Username]) as [RowDataPacket[], any];
 
         if (rows.length > 0) {
-            throw { code: 400, message: 'El usuario ya existe' };
+            throw { code: 400, message: `El nombre de usuario ${campos_usuario.Username} ya existe` };
         }
 
         //comprobar que el curp sea valido
@@ -56,8 +56,12 @@ export const register = async (req, res, next) => {
             throw { code: 400, message: 'El curp no es valido' };
         }
 
+        if(!validarFecha(campos_usuario.Fecha_nac)){
+            throw { code: 400, message: 'La fecha de nacimiento no es valida, debe ser aaaa-mm-dd' };
+        }
+
         //comprobar que el curp sea unico
-        query = "SELECT * FROM socios WHERE CURP = ?";
+        query = "SELECT * FROM socios WHERE CURP like ?";
         const [curpsIguales] = await db.query(query, [campos_usuario.CURP]) as [RowDataPacket[], any];
 
         if (curpsIguales.length > 0) {
