@@ -7,7 +7,7 @@ interface Acuerdo {
     Periodo_reuniones: number, // en semanas
     Periodo_cargos: string,
     Limite_inasistencias: string,
-    Minimo_aportacion: string,
+    Minimo_aportacion: number, // acciones iniciales de un socio en un grupo
     Costo_acciones: number,
     Tasa_interes: string,
     Limite_credito: number,

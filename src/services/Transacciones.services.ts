@@ -9,7 +9,7 @@ import { obtenerSesionActual, obtener_caja_sesion } from "./Sesiones.services";
  * @param con Conexion para hacer queries, para transacciones.
  * @returns El objeto de transaccion resultante
  */
-export async function crear_transaccion({Cantidad_movimiento, Catalogo_id, Socio_id, Grupo_id}, con?: Connection | Pool) {
+export async function crear_transaccion({Cantidad_movimiento, Catalogo_id, Socio_id, Grupo_id}: {Cantidad_movimiento: number, Catalogo_id: string, Socio_id: number, Grupo_id: number}, con?: Connection | Pool) {
     // Hacer con = db si es que no es undefined
     if (con === undefined) {
         con = db;
