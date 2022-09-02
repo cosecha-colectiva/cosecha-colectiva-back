@@ -2,6 +2,7 @@ import { Response } from "express";
 import db from "../config/database";
 import { obtenerAcuerdoActual } from "../services/Acuerdos.services";
 import { existeGrupo } from "../services/Grupos.services";
+import { obtenerSesionActual } from "../services/Sesiones.services";
 import { existeSocio, obtenerLimiteCreditoDisponible, socioEnGrupo } from "../services/Socios.services";
 import { crear_transaccion } from "../services/Transacciones.services";
 import { AdminRequest } from "../types/misc";
@@ -13,7 +14,7 @@ export const registrar_compra_acciones = async (req: AdminRequest<{ Cantidad: nu
     const { Cantidad } = req.body;
 
     if (camposIncompletos({ Cantidad })) {
-        return res.status(400).json
+        return res.status(400).json({ error: "Campos incompletos" });
     }
 
     let con = await db.getConnection();
@@ -23,7 +24,14 @@ export const registrar_compra_acciones = async (req: AdminRequest<{ Cantidad: nu
         // Validar que el grupo exista
         const grupo = await existeGrupo(Grupo_id);
         // Validar que el socio pertenezca al grupo
-        await socioEnGrupo(Socio_id, Grupo_id);
+        const grupoSocio = await socioEnGrupo(Socio_id, Grupo_id);
+        // Validar que haya una sesion activa
+        const sesionActual = await obtenerSesionActual(Grupo_id);
+
+        // comprobar que el socio no vaya a tener mas del 50% de las acciones del grupo
+        if (grupoSocio.Acciones! + Cantidad > (sesionActual.Acciones + Cantidad) / 2) {
+            return res.status(400).json({ error: "El socio no puede tener mas del 50% de las acciones del grupo" });
+        }
 
         // Agregar la accion a la relacion socio-grupo
         let query = "UPDATE grupo_socio SET acciones = acciones + ? WHERE Socio_id = ? AND Grupo_id = ?";
