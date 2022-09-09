@@ -142,7 +142,7 @@ export const login = async (req, res) => {
                 } as CustomJwtPayload, secret);
 
                 //mandando token por el header
-                return res.status(200).json({ code: 200, message: 'Usuario autenticado', token, data: { Socio_id: result[0].Socio_id, Username: result[0].Username } });
+                return res.status(200).json({ code: 200, message: 'Usuario autenticado', token, data: { Socio_id: result[0].Socio_id, Username: result[0].Username, Nombres: result[0].Nombres } });
             }
             else {
                 return res.status(401).json({ code: 400, message: 'Contraseña incorrecta' });
