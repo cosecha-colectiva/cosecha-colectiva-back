@@ -80,7 +80,7 @@ export const obtener_prestamos_ampliables = async (Grupo_id: number, Socio_id: n
  * @returns Array de objetos de tipo Prestamo.
  * @throws Error si no existe el socio o el grupo.
  */
-export const obtener_prestamos_pagables = async (Grupo_id: number, Socio_id: number): Promise<Prestamo[]> => {
+export const obtenerPrestamosVigentes = async (Grupo_id: number, Socio_id: number): Promise<Prestamo[]> => {
     const socio = await existeSocio(Socio_id);
     const grupo = await existeGrupo(Grupo_id);
 
@@ -89,7 +89,6 @@ export const obtener_prestamos_pagables = async (Grupo_id: number, Socio_id: num
     FROM prestamos
     JOIN sesiones ON prestamos.Sesion_id = sesiones.Sesion_id
     JOIN grupos ON grupos.Grupo_id = sesiones.Grupo_id
-    JOIN acuerdos ON acuerdos.Grupo_id = grupos.Grupo_id and acuerdos.\`Status\` = 1
     WHERE prestamos.Estatus_prestamo = 0 -- Que no estén pagados ya
         AND grupos.Grupo_id = ? -- De cierto grupo
         AND prestamos.Socio_id = ? -- De cierto socio
@@ -125,7 +124,7 @@ export const pagarPrestamo = async (Prestamo_id: number, Monto_abono: number, co
         Cantidad_movimiento: Monto_abono_prestamo + Monto_abono_interes,
         Socio_id: prestamo.Socio_id,
         Catalogo_id: "ABONO_PRESTAMO",
-        Grupo_id: sesion?.Grupo_id,
+        Grupo_id: sesion?.Grupo_id!,
     }, con);
 
     // Crear registro en Transaccion_prestamos
