@@ -5,10 +5,10 @@ import { campos_incompletos, catch_common_error, existe_socio, Fecha_actual, val
 import * as jwt from "jsonwebtoken";
 import { OkPacket, RowDataPacket } from "mysql2";
 import { getCommonError, validarCurp } from "../utils/utils";
-import { CustomJwtPayload, SocioRequest } from "../types/misc";
+import { AdminRequest, CustomJwtPayload, SocioRequest } from "../types/misc";
 import { existeGrupo } from "../services/Grupos.services";
 import { PoolConnection } from "mysql2/promise";
-import { actualizaPassword, actualizaPreguntaSocio, crearPreguntaSocio, validarPregunta } from "../services/Socios.services";
+import { actualizaPassword, actualizaPreguntaSocio, crearPreguntaSocio, socioEnGrupo, validarPregunta } from "../services/Socios.services";
 
 export const register = async (req, res, next) => {
     // Recoger los datos del body
@@ -242,6 +242,38 @@ export const unirse_grupo = async (req: SocioRequest<any>, res) => {
         return res.status(400).json({ code: 400, message: "El socio ya está en el grupo" });
     } catch (error) {
         const { message, code } = catch_common_error(error);
+        return res.status(code).json({ code, message });
+    }
+}
+
+// controlador para retirar ganancias del socio en el grupo
+// obtiene el id del socio de los parametros y del grupo del req
+export const retirar_ganancias = async (req: AdminRequest<any>, res) => {
+    const Socio_id = Number(req.params.Socio_id);
+    const { id_grupo_actual } = req;
+
+    try {
+        // validar que el socio pertenezca al grupo
+        const grupo_socio = await socioEnGrupo(Socio_id, id_grupo_actual!);
+
+        // marcar ganancias como retiradas
+        let query = `
+        UPDATE ganancias
+        SET ganancias.Entregada = 1
+        WHERE Socio_id = ? -- de cierto socio
+        AND ganancias.Sesion_id IN (
+            SELECT sesiones.Sesion_id
+            FROM sesiones
+            WHERE sesiones.Grupo_id = ? -- de cierto grupo
+        )
+        `
+
+        await db.query(query, [Socio_id, id_grupo_actual]);
+
+        // enviar respuesta
+        return res.status(200).json({ code: 200, message: "Ganancias retiradas" });
+    } catch (error) {
+        const { message, code } = getCommonError(error);
         return res.status(code).json({ code, message });
     }
 }

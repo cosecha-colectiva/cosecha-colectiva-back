@@ -1,3 +1,4 @@
+import { PoolConnection } from "mysql2/promise";
 import db from "../config/database";
 import { obtenerSociosGrupo } from "./Grupos.services";
 import { existeSesion, obtenerSesionActual, obtener_sesion } from "./Sesiones.services";
@@ -8,14 +9,10 @@ import { existeSesion, obtenerSesionActual, obtener_sesion } from "./Sesiones.se
  * @returns Ganancias acumuladas de la sesion
  * @throws Si ocurre un error
  */
-export async function obtenerGanancias(Sesion_id: number): Promise<number> {
-    const sesion = await existeSesion(Sesion_id);
+export async function obtenerGananciasSesion(Sesion_id: number, opcionales?: { sesion?: Sesion} ){
+    const sesion = opcionales?.sesion || (await obtener_sesion(Sesion_id))!;
     return sesion.Ganancias;
 }
-
-// TODO: pensar y hacer la tabla de ganancias
-// TODO: hacer el type de ganancias en tablas.d.ts
-// TODO: actualizar las funciones con la tabla de ganancias
 
 /**
  * Funcion para obtener las ganancias acumuladas de un socio en un grupo.
@@ -26,35 +23,36 @@ export async function obtenerGanancias(Sesion_id: number): Promise<number> {
  */
 export async function obtenerGananciasAcumuladasGrupoSocio(Grupo_id: number, Socio_id: number): Promise<number> {
     let query = `
-    Select sum(Ganancia) as Ganancia
-    FROM ganancias
-    WHERE Grupo_id = ?
-    AND Socio_id = ?
-    AND repartida = 0
+    Select sum(Monto_ganancia) as Ganancias
+    From ganancias
+    Where Grupo_id = ? and Socio_id = ? and Status = 1 and Entregada = 0
     `;
 
     const ganancias = (await db.query(query, [Grupo_id, Socio_id]) as [{ Ganancia: number }[], any])[0][0];
+
+    console.log(ganancias); // TODO: eliminar
 
     return ganancias.Ganancia;
 }
 
 /**
- * Funcion para repartir las ganancias de la sesion actual.
+ * Funcion para asignar las ganancias de la sesion actual.
  * @param Grupo_id Id del grupo.
  * @returns void
  * @throws Error si los datos no son validos.
  */
-export async function repartirGanancias(Grupo_id: number): Promise<void> {
-    const sesionActual = await obtenerSesionActual(Grupo_id);
-    const sociosEnGrupo = await obtenerSociosGrupo(Grupo_id);
-
-    const ganancias = await obtenerGanancias(sesionActual.Sesion_id!);
+export async function asignarGananciasSesion(Grupo_id: number, opcionales?: {sesionActual?: Sesion, sociosEnGrupo?: GrupoSocio[], gananciasSesion?: number}): Promise<void> {
+    const sesionActual = opcionales?.sesionActual || await obtenerSesionActual(Grupo_id);
+    const sociosEnGrupo = opcionales?.sociosEnGrupo || await obtenerSociosGrupo(Grupo_id);
+    const gananciasSesion = opcionales?.gananciasSesion || await obtenerGananciasSesion(sesionActual.Sesion_id!);
 
     for (const grupoSocio of sociosEnGrupo) {
-        const camposGanancia = {
-            Grupo_socio_id: grupoSocio.Grupo_socio_id,
-            Ganancia: ganancias * (grupoSocio.Acciones! / sesionActual.Acciones), // 100 de ganancia * (20 acciones del socio / 50 acciones totales) = 40 de ganancia para el socio
-            Sesion_id: sesionActual.Sesion_id!
+        const camposGanancia: Ganancias = {
+            Socio_id: grupoSocio.Socio_id,
+            Monto_ganancia: (gananciasSesion / sesionActual.Acciones) * grupoSocio.Acciones!,
+            Sesion_id: sesionActual.Sesion_id!,
+            Entregada: 0,
+            Ganancia_accion: gananciasSesion / sesionActual.Acciones,
         };
 
         await db.query("INSERT INTO ganancias SET ?", camposGanancia);

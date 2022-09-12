@@ -8,6 +8,7 @@ const router = Router();
 // Recursos
 router.use("/socios", sociosRoutes);
 router.use("/grupos", gruposRoutes);
+
 // Otros Recursos
 router.get("/preguntas", enviar_preguntas_seguridad);
 

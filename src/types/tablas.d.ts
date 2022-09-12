@@ -170,3 +170,11 @@ interface TransaccionPrestamo {
     Monto_abono_interes: string
 }
 
+interface Ganancias {
+    Ganancias_id?: number,
+    Ganancia_accion: number,
+    Monto_ganancia: number,
+    Entregada: 0 | 1, // 0 = no entregada, 1 = entregada
+    Socio_id: number,
+    Sesion_id: number
+}
