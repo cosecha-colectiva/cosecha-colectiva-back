@@ -1,13 +1,15 @@
 import db from "../config/database";
 import { Fecha_actual, campos_incompletos, existe_grupo, catch_common_error, obtener_sesion_activa, existe_socio, socio_en_grupo } from "../utils/validaciones";
-import { registrar_asistencias } from "../services/Sesiones.services";
+import { obtenerSesionActual, registrar_asistencias } from "../services/Sesiones.services";
 import { AdminRequest } from "../types/misc";
+import { getCommonError } from "../utils/utils";
+import { asignarGananciasSesion } from "../services/Ganancias.services";
 
 //crear nueva sesion
 export const crear_sesion = async (req: AdminRequest<{ Socios: { "Socio_id": number, "Presente": 1 | 0 }[] }>, res) => {
     const Socios = req.body.Socios;
     const Grupo_id = req.id_grupo_actual;
-    console.log(Grupo_id);
+
     const campos_sesion = {
         Fecha: Fecha_actual(),
         Caja: null,
@@ -133,5 +135,35 @@ export const registrar_retardos = async (req, res) => {
     } catch (error) {
         const { code, message } = catch_common_error(error);
         return res.json({ code, message }).status(code);
+    }
+}
+
+export const finalizar_sesion = async (req: AdminRequest<any>, res) => {
+    // TODO: Subir las imagenes de las firmas de los socios a AWS S3
+
+    const { id_grupo_actual } = req;
+
+    const con = await db.getConnection();
+    try {
+        await con.beginTransaction();
+
+        const sesionActual = await obtenerSesionActual(id_grupo_actual!);
+
+        let query = "UPDATE sesiones SET Activa = 0 WHERE Sesion_id = ?";
+        await con.query(query, sesionActual.Sesion_id);
+        
+        asignarGananciasSesion(id_grupo_actual!, {sesionActual}, con);
+
+        await con.commit();
+
+        return res.status(200).json({ code: 200, message: 'Sesion finalizada' });
+
+    } catch (error) {
+        await con.rollback();
+
+        const { code, message } = getCommonError(error);
+        return res.json({ code, message }).status(code);
+    } finally {
+        con.release();
     }
 }
