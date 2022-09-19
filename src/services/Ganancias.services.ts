@@ -1,4 +1,4 @@
-import { PoolConnection } from "mysql2/promise";
+import { Pool, PoolConnection } from "mysql2/promise";
 import db from "../config/database";
 import { obtenerSociosGrupo } from "./Grupos.services";
 import { existeSesion, obtenerSesionActual, obtener_sesion } from "./Sesiones.services";
@@ -9,7 +9,7 @@ import { existeSesion, obtenerSesionActual, obtener_sesion } from "./Sesiones.se
  * @returns Ganancias acumuladas de la sesion
  * @throws Si ocurre un error
  */
-export async function obtenerGananciasSesion(Sesion_id: number, opcionales?: { sesion?: Sesion} ){
+export async function obtenerGananciasSesion(Sesion_id: number, opcionales?: { sesion?: Sesion }) {
     const sesion = opcionales?.sesion || (await obtener_sesion(Sesion_id))!;
     return sesion.Ganancias;
 }
@@ -38,13 +38,17 @@ export async function obtenerGananciasAcumuladasGrupoSocio(Grupo_id: number, Soc
 /**
  * Funcion para asignar las ganancias de la sesion actual.
  * @param Grupo_id Id del grupo.
+ * @param opcionales Objetos con datos para evitar hacer consultas innecesarias.
+ * @param con Conexion a la base de datos. Ideal para una transaccion.
  * @returns void
  * @throws Error si los datos no son validos.
  */
-export async function asignarGananciasSesion(Grupo_id: number, opcionales?: {sesionActual?: Sesion, sociosEnGrupo?: GrupoSocio[], gananciasSesion?: number}): Promise<void> {
-    const sesionActual = opcionales?.sesionActual || await obtenerSesionActual(Grupo_id);
-    const sociosEnGrupo = opcionales?.sociosEnGrupo || await obtenerSociosGrupo(Grupo_id);
-    const gananciasSesion = opcionales?.gananciasSesion || await obtenerGananciasSesion(sesionActual.Sesion_id!);
+export async function asignarGananciasSesion(Grupo_id: number, opcionales?: { sesionActual?: Sesion, sociosEnGrupo?: GrupoSocio[] }, con?: PoolConnection | Pool): Promise<void> {
+    const sesionActual = opcionales?.sesionActual || await obtenerSesionActual(Grupo_id); 
+    const sociosEnGrupo = opcionales?.sociosEnGrupo || await obtenerSociosGrupo(Grupo_id); 
+    const gananciasSesion = sesionActual.Ganancias;
+
+    con = con || db;
 
     for (const grupoSocio of sociosEnGrupo) {
         const camposGanancia: Ganancias = {
@@ -55,6 +59,6 @@ export async function asignarGananciasSesion(Grupo_id: number, opcionales?: {ses
             Ganancia_accion: gananciasSesion / sesionActual.Acciones,
         };
 
-        await db.query("INSERT INTO ganancias SET ?", camposGanancia);
+        await con.query("INSERT INTO ganancias SET ?", camposGanancia);
     }
 }
