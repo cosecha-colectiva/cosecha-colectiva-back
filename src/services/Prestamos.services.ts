@@ -2,7 +2,7 @@ import { OkPacket } from "mysql2";
 import { Connection, Pool, PoolConnection } from "mysql2/promise";
 import db from "../config/database";
 import { existeGrupo } from "./Grupos.services";
-import { obtener_sesion } from "./Sesiones.services";
+import { obtenerSesionActual, obtener_sesion } from "./Sesiones.services";
 import { existeSocio } from "./Socios.services";
 import { crear_transaccion } from "./Transacciones.services";
 
@@ -107,7 +107,8 @@ export const pagarPrestamo = async (Prestamo_id: number, Monto_abono: number, co
     if (con === undefined) con = db;
 
     const prestamo = await existe_prestamo(Prestamo_id) as Prestamo;
-    const sesion = await obtener_sesion(prestamo.Sesion_id);
+    const sesionPrestamo = await obtener_sesion(prestamo.Sesion_id);
+    const sesionActual = await obtenerSesionActual(sesionPrestamo?.Grupo_id!);
     const deudaInteres = prestamo.Interes_generado - prestamo.Interes_pagado;
     const deudaPrestamo = prestamo.Monto_prestamo - prestamo.Monto_pagado;
 
@@ -124,7 +125,7 @@ export const pagarPrestamo = async (Prestamo_id: number, Monto_abono: number, co
         Cantidad_movimiento: Monto_abono_prestamo + Monto_abono_interes,
         Socio_id: prestamo.Socio_id,
         Catalogo_id: "ABONO_PRESTAMO",
-        Grupo_id: sesion?.Grupo_id!,
+        Grupo_id: sesionPrestamo?.Grupo_id!,
     }, con);
 
     // Crear registro en Transaccion_prestamos
@@ -145,7 +146,5 @@ export const pagarPrestamo = async (Prestamo_id: number, Monto_abono: number, co
 
     // Agregar ganancia a la sesion
     query = "Update sesiones SET Ganancias = Ganancias + ? WHERE Sesion_id = ?";
-    const result = await con.query(query, [Monto_abono_interes, prestamo.Sesion_id]) as [OkPacket, any];
-    console.log(`Update sesiones SET Ganancias = Ganancias + ${Monto_abono_interes} WHERE Sesion_id = ${prestamo.Sesion_id}`);
-    console.log(result);
+    const result = await con.query(query, [Monto_abono_interes, sesionActual.Sesion_id]) as [OkPacket, any];
 }
