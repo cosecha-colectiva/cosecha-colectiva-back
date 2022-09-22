@@ -1,11 +1,11 @@
 import { Router } from "express";
-import { register, login, unirse_grupo, recuperar_password, cambiar_password, cambiar_pregunta_seguridad } from "../../controllers/socios_control";
+import { register, login, unirse_grupo, recuperar_password, cambiar_password, cambiar_pregunta_seguridad, enviar_grupos_socio } from "../../controllers/socios_control";
 import { authSocio } from "../../middleware/auth";
 
 const router = Router({ mergeParams: true });
 
 //Informacion de pantalla mis grupos
-router.get("/grupos", authSocio, unirse_grupo);
+router.get("/grupos", authSocio, enviar_grupos_socio);
 // Registrar un socio
 router.post("/", register);
 // Login
