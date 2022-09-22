@@ -4,6 +4,8 @@ import { authSocio } from "../../middleware/auth";
 
 const router = Router({ mergeParams: true });
 
+//Informacion de pantalla mis grupos
+router.get("/grupos", authSocio, unirse_grupo);
 // Registrar un socio
 router.post("/", register);
 // Login
