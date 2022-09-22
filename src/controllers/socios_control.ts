@@ -9,6 +9,7 @@ import { AdminRequest, CustomJwtPayload, SocioRequest } from "../types/misc";
 import { existeGrupo } from "../services/Grupos.services";
 import { PoolConnection } from "mysql2/promise";
 import { actualizaPassword, actualizaPreguntaSocio, crearPreguntaSocio, socioEnGrupo, validarPregunta } from "../services/Socios.services";
+import { obtenerAcuerdoActual } from "../services/Acuerdos.services";
 
 export const register = async (req, res, next) => {
     // Recoger los datos del body
@@ -211,32 +212,37 @@ export const unirse_grupo = async (req: SocioRequest<any>, res) => {
         // validar que el grupo exista
         const grupo = await existeGrupo(Codigo_grupo);
 
-
-
         let query = "SELECT * FROM grupo_socio WHERE Socio_id = ? AND Grupo_id = ?";
         const [grupo_socio] = await db.query(query, [id_socio_actual, grupo.Grupo_id]) as [GrupoSocio[], any];
+
+        const acuerdoActual = await obtenerAcuerdoActual(grupo.Grupo_id!);
 
         // si el socio no esta en el grupo
         if (grupo_socio.length === 0) {
             const campos_grupo_socio: GrupoSocio = {
                 Socio_id: id_socio_actual!,
                 Grupo_id: grupo.Grupo_id!,
-                Acciones: 0,
+                Acciones: acuerdoActual.Minimo_aportacion, // se le asignan las acciones que se le piden para unirse al grupo
                 Status: 1,
                 Tipo_socio: "SOCIO",
-            }
+            };
 
             query = "INSERT INTO grupo_socio SET ?";
             await db.query(query, campos_grupo_socio);
+
+            // actualizar el monto de acciones de la ultima sesion registrada del grupo
+            query = "UPDATE sesiones set Acciones = Acciones + ? WHERE Grupo_id = ? ORDER BY Sesion_id DESC LIMIT 1";
+            await db.query(query, [acuerdoActual.Minimo_aportacion, grupo.Grupo_id]);
+
             return res.status(200).json({ code: 200, message: "El socio se ha unido correctamente" });
         }
 
-        // si el socio está inactivo en el grupo
+        /* // si el socio está inactivo en el grupo
         if (grupo_socio[0].Status === 0) {
             query = "UPDATE grupo_socio SET Status = 1 WHERE Socio_id = ? AND Grupo_id = ?";
             await db.query(query, [id_socio_actual, grupo.Grupo_id]);
             return res.status(200).json({ code: 200, message: "El socio se ha unido correctamente" });
-        }
+        } */
 
         // si el socio está activo en el grupo
         return res.status(400).json({ code: 400, message: "El socio ya está en el grupo" });
