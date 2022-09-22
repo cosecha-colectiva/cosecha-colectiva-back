@@ -238,3 +238,21 @@ export const actualizaPreguntaSocio = async (preguntaSocio: PreguntaSocio, con?:
 
     return result;
 }
+
+/**
+ * Funcion para obtener objeto una relacion grupo-socio
+ * @param Socio_id El id del socio
+ * @param Grupo_id El id del grupo
+ * @returns Un objeto de tipo GrupoSocio
+ * @throws Si los datos no son validos
+ */
+ export const obtenerGrupoSocio = async (Socio_id: number, Grupo_id: number) => {
+    const query = "SELECT * FROM grupo_socio WHERE Socio_id = ? AND Grupo_id = ?";
+    const [result] = await db.query(query, [Socio_id, Grupo_id]) as [GrupoSocio[], any];
+
+    if (result.length === 0) {
+        throw "El socio no pertenece al grupo";
+    }
+
+    return result[0] as GrupoSocio;
+}
