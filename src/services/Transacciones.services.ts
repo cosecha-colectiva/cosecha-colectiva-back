@@ -27,6 +27,10 @@ export async function crear_transaccion({Cantidad_movimiento, Catalogo_id, Socio
         Sesion_id: sesionActual.Sesion_id!,
     }
 
+    if(sesionActual.Caja + Cantidad_movimiento < 0) {
+        throw "La caja no puede quedar menor a 0";
+    }
+
     // Insertar Transaccion
     let query = "Insert into transacciones SET ?";
     const resultado_registro_transaccion = (await con.query(query, campos_transaccion))[0] as OkPacket;
