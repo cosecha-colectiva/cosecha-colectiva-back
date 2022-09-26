@@ -98,7 +98,7 @@ export const crear_prestamo = async (req: AdminRequest<PayloadCrearPrestamos>, r
             }
 
             // Crear Registro en prestamos
-            generar_prestamo(Grupo_id, campos_prestamo);
+            await generar_prestamo(Grupo_id, campos_prestamo, con);
             // return res.status(201).json({ code: 201, message: "Prestamo creado" });
         } else {
             // Verificar que el socio pueda generar un prestamo ampliado
@@ -133,13 +133,13 @@ export const crear_prestamo = async (req: AdminRequest<PayloadCrearPrestamos>, r
 
             // let dinero_extra = Monto_prestamo - faltante; //Preguntar que si no hay un espacio en la pantalla para ver lo que en realidad se da en dinero fisico
             //Pagar el prestamo original
-            console.log(faltante);
+            console.log({faltante});
             
-            pagarPrestamo(Prestamo_original_id!, faltante, con);
+            await pagarPrestamo(Prestamo_original_id!, faltante, con);
             //Establecer de cuanto es el prestamo de la ampliacion
 
             // Generar prestamo ampliado
-            generar_prestamo(Grupo_id, campos_prestamo);
+            await generar_prestamo(Grupo_id, campos_prestamo, con);
         }
 
         await con.commit();

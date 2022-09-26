@@ -131,7 +131,6 @@ export const pagarPrestamo = async (Prestamo_id: number, Monto_abono: number, co
     // Crear registro en Transaccion_prestamos
     let query = "INSERT INTO transaccion_prestamos (Prestamo_id, Transaccion_id, Monto_abono_prestamo, Monto_abono_interes) VALUES (?, ?, ?, ?)";
     await con.query(query, [Prestamo_id, transaccion.Transaccion_id, Monto_abono_prestamo, Monto_abono_interes]);
-    console.log('aquí ya se hizo la transaccion');
     
     // Actualizar campos en el prestamo
     prestamo.Interes_pagado += Monto_abono_interes;
@@ -144,7 +143,6 @@ export const pagarPrestamo = async (Prestamo_id: number, Monto_abono: number, co
 
     query = "Update prestamos SET Interes_pagado = ?, Monto_pagado = ?, Estatus_prestamo = ? WHERE Prestamo_id = ?";
     await con.query(query, [prestamo.Interes_pagado, prestamo.Monto_pagado, prestamo.Estatus_prestamo, Prestamo_id]);
-    console.log('aquí ya se actualizo');
 }
 
 /**
@@ -154,10 +152,12 @@ export const pagarPrestamo = async (Prestamo_id: number, Monto_abono: number, co
  * @throws Error si el prestamo no se pudo generar.
  */
  export const generar_prestamo = async (Grupo_id: number, campos_prestamo: Prestamo, con?: PoolConnection | Pool) => {
+    if (con === undefined) con = db;
     let query = "INSERT INTO prestamos SET ?";
-    await db.query(query, campos_prestamo);
+    await con.query(query, campos_prestamo);
+    
     // Registrar transaccion
-    crear_transaccion({Cantidad_movimiento: -campos_prestamo.Monto_prestamo, Catalogo_id: "ENTREGA_PRESTAMO", Grupo_id, Socio_id: campos_prestamo.Socio_id}, con);
+     await crear_transaccion({Cantidad_movimiento: -campos_prestamo.Monto_prestamo, Catalogo_id: "ENTREGA_PRESTAMO", Grupo_id, Socio_id: campos_prestamo.Socio_id}, con);
 }
 
 // export const limite_credito = async (Socio_id?: number, Grupo_id: number, con?: PoolConnection | Pool) => {
