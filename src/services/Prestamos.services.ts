@@ -131,7 +131,8 @@ export const pagarPrestamo = async (Prestamo_id: number, Monto_abono: number, co
     // Crear registro en Transaccion_prestamos
     let query = "INSERT INTO transaccion_prestamos (Prestamo_id, Transaccion_id, Monto_abono_prestamo, Monto_abono_interes) VALUES (?, ?, ?, ?)";
     await con.query(query, [Prestamo_id, transaccion.Transaccion_id, Monto_abono_prestamo, Monto_abono_interes]);
-
+    console.log('aquí ya se hizo la transaccion');
+    
     // Actualizar campos en el prestamo
     prestamo.Interes_pagado += Monto_abono_interes;
     prestamo.Monto_pagado += Monto_abono_prestamo;
@@ -143,6 +144,7 @@ export const pagarPrestamo = async (Prestamo_id: number, Monto_abono: number, co
 
     query = "Update prestamos SET Interes_pagado = ?, Monto_pagado = ?, Estatus_prestamo = ? WHERE Prestamo_id = ?";
     await con.query(query, [prestamo.Interes_pagado, prestamo.Monto_pagado, prestamo.Estatus_prestamo, Prestamo_id]);
+    console.log('aquí ya se actualizo');
 }
 
 /**

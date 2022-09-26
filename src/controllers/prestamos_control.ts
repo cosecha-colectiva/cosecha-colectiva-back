@@ -40,6 +40,8 @@ export const crear_prestamo = async (req: AdminRequest<PayloadCrearPrestamos>, r
         return res.status(400).json({ code: 400, message: 'Campos incompletos' });
     }
 
+    console.log("este es el id: " + Prestamo_original_id);
+    
     const con = await db.getConnection();
     try {
 
@@ -104,16 +106,22 @@ export const crear_prestamo = async (req: AdminRequest<PayloadCrearPrestamos>, r
                 return res.status(400).json({ code: 400, message: "No se permiten ampliar prestamos" })
             }
 
+            console.log("este es el id2: " + Prestamo_original_id);
             //Verificar que el prestamo no haya sido ampliado anteriormente
-            let query_prestamo = "SELECT * FROM prestamos WHERE Prestamo_original_id = ? OR Estatus_ampliacion = 1"
-            const [prestamo_original] = await db.query(query_prestamo, [Prestamo_original_id]) as [Prestamo[], any];
+            let query_pres_am = "SELECT * FROM prestamos WHERE Prestamo_original_id = ?  OR Prestamo_id = ? AND Estatus_ampliacion = 1"
+            const [prestamo_amp] = await db.query(query_pres_am, [Prestamo_original_id, Prestamo_original_id]) as [Prestamo[], any];
+            console.log(prestamo_amp.length);
+            console.log(prestamo_amp);
 
-            if (prestamo_original[0].Prestamo_original_id !== null) {
+            if (prestamo_amp.length !== 0) {
                 return res.status(400).json({ code: 400, message: "Este prestamo ya fue ampliado una vez" });
             }
 
+            let query_prestamo = "SELECT * FROM prestamos WHERE Prestamo_id = ? "
+            const [prestamo_original] = await db.query(query_prestamo, [Prestamo_original_id]) as [Prestamo[], any];
+
             //Asegurarse de que el monto sea igual o mayor a la cantidad faltante de pagar que el prestamo original
-            let faltante = prestamo_original[0].Monto_prestamo - prestamo_original[0].Monto_pagado;
+            let faltante = (prestamo_original[0].Monto_prestamo - prestamo_original[0].Monto_pagado) + (prestamo_original[0].Interes_generado - prestamo_original[0].Interes_pagado);
             if (Monto_prestamo < faltante) {
                 return res.status(400).json({ code: 400, message: "La cantidad no cubre el faltante del prestamo original" });
             }
@@ -125,7 +133,11 @@ export const crear_prestamo = async (req: AdminRequest<PayloadCrearPrestamos>, r
 
             // let dinero_extra = Monto_prestamo - faltante; //Preguntar que si no hay un espacio en la pantalla para ver lo que en realidad se da en dinero fisico
             //Pagar el prestamo original
+            console.log(faltante);
+            
             pagarPrestamo(Prestamo_original_id!, faltante, con);
+            //Establecer de cuanto es el prestamo de la ampliacion
+
             // Generar prestamo ampliado
             generar_prestamo(Grupo_id, campos_prestamo);
         }
