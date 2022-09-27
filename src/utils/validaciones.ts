@@ -118,7 +118,7 @@ export const obtener_acuerdo_actual = async ( Grupo_id: number) => {
 }
 
 export function aplanar_respuesta(respuesta: string) {
-    return respuesta.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    return respuesta.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f ]/g, "");
 }
 
 export const actualizar_password = async (Socio_id, Password) => {
