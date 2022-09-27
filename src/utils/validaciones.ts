@@ -226,7 +226,7 @@ export const prestamos_multiples = async (Grupo_id: number,  lista_socios: strin
             lista_socios_prestamo.push({ "Socio_id": socio[0].Socio_id, "Nombres": datos_personales[0].Nombres, "Apellidos": datos_personales[0].Apellidos, "puede_pedir": 1, "message": "", "Limite_credito_disponible": (socio[0].Acciones * Limite_credito) });
         } else {
             //si no se permiten prestamos multiples mandar que no puede pedir otro prestamo
-            if (Creditos_simultaneos === 0) { // [{},{}...] -> 
+            if (Creditos_simultaneos <= 1) { // [{},{}...] -> 
                 lista_socios_prestamo.push({ "Socio_id": socio[0].Socio_id, "Nombres": datos_personales[0].Nombres, "Apellidos": datos_personales[0].Apellidos, "puede_pedir": 0, "message": "Ya tiene un prestamo vigente" });
             } else {
                 if (prestamos.length > Creditos_simultaneos) {
