@@ -8,7 +8,7 @@ import { getCommonError, validarCurp, validarFecha } from "../utils/utils";
 import { AdminRequest, CustomJwtPayload, SocioRequest } from "../types/misc";
 import { existeGrupo } from "../services/Grupos.services";
 import { PoolConnection } from "mysql2/promise";
-import { actualizaPassword, actualizaPreguntaSocio, crearPreguntaSocio, socioEnGrupo, validarPregunta } from "../services/Socios.services";
+import { actualizaPassword, actualizaPreguntaSocio, crearPreguntaSocio, grupos_del_socio, obtenerGrupoSocio, socioEnGrupo, validarPregunta } from "../services/Socios.services";
 import { obtenerAcuerdoActual } from "../services/Acuerdos.services";
 import { crear_transaccion } from "../services/Transacciones.services";
 import { comprar_acciones } from "../services/Acciones.services";
@@ -59,7 +59,7 @@ export const register = async (req, res, next) => {
             throw { code: 400, message: 'El curp no es valido' };
         }
 
-        if(!validarFecha(campos_usuario.Fecha_nac)){
+        if (!validarFecha(campos_usuario.Fecha_nac)) {
             throw { code: 400, message: 'La fecha de nacimiento no es valida, debe ser aaaa-mm-dd' };
         }
 
@@ -295,6 +295,28 @@ export const retirar_ganancias = async (req: AdminRequest<any>, res) => {
 
         // enviar respuesta
         return res.status(200).json({ code: 200, message: "Ganancias retiradas" });
+    } catch (error) {
+        const { message, code } = getCommonError(error);
+        return res.status(code).json({ code, message });
+    }
+}
+
+export const enviar_grupos_socio = async (req: SocioRequest<any>, res) => {
+    const { id_socio_actual } = req;
+
+    try {
+        const grupos: Grupo[] = await grupos_del_socio(id_socio_actual!);
+        const data: {Grupo_id: number, Nombre: string, Rol_socio: "ADMIN" | "SOCIO" | "SUPLENTE" | "CREADOR"}[] = [];
+        for (const grupo of grupos) {
+            data.push({
+                Grupo_id: grupo.Grupo_id!,
+                Nombre: grupo.Nombre_grupo,
+                Rol_socio: (await obtenerGrupoSocio(id_socio_actual!, grupo.Grupo_id!)).Tipo_socio,
+            });
+        }
+
+        return res.status(200).json({ code: 200, message: "Información de los grupos", data });
+
     } catch (error) {
         const { message, code } = getCommonError(error);
         return res.status(code).json({ code, message });
