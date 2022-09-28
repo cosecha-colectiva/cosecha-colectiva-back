@@ -10,6 +10,8 @@ import { existeGrupo } from "../services/Grupos.services";
 import { PoolConnection } from "mysql2/promise";
 import { actualizaPassword, actualizaPreguntaSocio, crearPreguntaSocio, socioEnGrupo, validarPregunta } from "../services/Socios.services";
 import { obtenerAcuerdoActual } from "../services/Acuerdos.services";
+import { crear_transaccion } from "../services/Transacciones.services";
+import { comprar_acciones } from "../services/Acciones.services";
 
 export const register = async (req, res, next) => {
     // Recoger los datos del body
@@ -107,6 +109,11 @@ export const cambiar_pregunta_seguridad = async (req: SocioRequest<any>, res) =>
     const { id_socio_actual } = req;
     const { Pregunta_id, Respuesta } = req.body;
 
+    // verificar campos incompletos
+    if (campos_incompletos({ Pregunta_id, Respuesta })) {
+        return res.status(400).json({ code: 400, message: 'Campos incompletos' });
+    }
+
     try {
         await actualizaPreguntaSocio({
             Pregunta_id,
@@ -201,6 +208,11 @@ export const recuperar_password = async (req, res) => {
 
 // controlador para unirse a grupo
 export const unirse_grupo = async (req: SocioRequest<any>, res) => {
+    // si el socio no esta en el grupo, se agrega
+    // si el socio ya esta en el grupo, error.
+    // Si el grupo es nuevo (no tiene acuerdos) solo se agrega al socio
+    // Si el grupo ya tiene acuerdos, se agrega al socio y se asignan las acciones
+
     const { id_socio_actual } = req;
     const { Codigo_grupo } = req.body;
 
@@ -208,45 +220,46 @@ export const unirse_grupo = async (req: SocioRequest<any>, res) => {
         return res.status(400).json({ code: 400, message: "campos incompletos" });
     }
 
+    const con = await db.getConnection();
     try {
+        await con.beginTransaction();
+
         // validar que el grupo exista
         const grupo = await existeGrupo(Codigo_grupo);
 
         let query = "SELECT * FROM grupo_socio WHERE Socio_id = ? AND Grupo_id = ?";
-        const [grupo_socio] = await db.query(query, [id_socio_actual, grupo.Grupo_id]) as [GrupoSocio[], any];
+        const [grupo_socio] = await con.query(query, [id_socio_actual, grupo.Grupo_id]) as [GrupoSocio[], any];
 
-        const acuerdoActual = await obtenerAcuerdoActual(grupo.Grupo_id!);
 
-        // si el socio no esta en el grupo
-        if (grupo_socio.length === 0) {
+        // si el socio ya esta en el grupo
+        if (grupo_socio.length != 0) {
+            return res.status(400).json({ code: 400, message: "El socio ya está en el grupo" });
+        }
+
             const campos_grupo_socio: GrupoSocio = {
                 Socio_id: id_socio_actual!,
                 Grupo_id: grupo.Grupo_id!,
-                Acciones: acuerdoActual.Minimo_aportacion, // se le asignan las acciones que se le piden para unirse al grupo
+            Acciones: 0,
                 Status: 1,
                 Tipo_socio: "SOCIO",
             };
 
             query = "INSERT INTO grupo_socio SET ?";
-            await db.query(query, campos_grupo_socio);
+        const [resultado_socio] = await con.query(query, campos_grupo_socio) as [OkPacket, any];
 
-            // actualizar el monto de acciones de la ultima sesion registrada del grupo
-            query = "UPDATE sesiones set Acciones = Acciones + ? WHERE Grupo_id = ? ORDER BY Sesion_id DESC LIMIT 1";
-            await db.query(query, [acuerdoActual.Minimo_aportacion, grupo.Grupo_id]);
+        // si hay acuerdo actual, se le asignan las acciones
+        try {
+            const acuerdoActual = await obtenerAcuerdoActual(grupo.Grupo_id!);
 
-            return res.status(200).json({ code: 200, message: "El socio se ha unido correctamente" });
+            comprar_acciones(resultado_socio.insertId, grupo.Grupo_id, acuerdoActual.Minimo_aportacion, con);
+        } catch (error) {
+            // si no hay acuerdo actual, no se le asignan acciones
         }
 
-        /* // si el socio está inactivo en el grupo
-        if (grupo_socio[0].Status === 0) {
-            query = "UPDATE grupo_socio SET Status = 1 WHERE Socio_id = ? AND Grupo_id = ?";
-            await db.query(query, [id_socio_actual, grupo.Grupo_id]);
+        con.commit();
             return res.status(200).json({ code: 200, message: "El socio se ha unido correctamente" });
-        } */
-
-        // si el socio está activo en el grupo
-        return res.status(400).json({ code: 400, message: "El socio ya está en el grupo" });
     } catch (error) {
+        con.rollback();
         const { message, code } = catch_common_error(error);
         return res.status(code).json({ code, message });
     }
