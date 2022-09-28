@@ -212,6 +212,8 @@ export const crearPreguntaSocio = async (preguntaSocio: PreguntaSocio, con?: Con
 
     // aplanar la respuesta
     preguntaSocio.Respuesta = aplanar_respuesta(preguntaSocio.Respuesta);
+    // encriptar la respuesta
+    preguntaSocio.Respuesta = hashSync(preguntaSocio.Respuesta, 10);
 
     const query = "INSERT INTO preguntas_socios SET ?";
     const [result] = await con.query(query, [preguntaSocio]) as [OkPacket, any];
@@ -234,6 +236,8 @@ export const actualizaPreguntaSocio = async (preguntaSocio: PreguntaSocio, con?:
 
     // Aplanar la respuesta
     preguntaSocio.Respuesta = aplanar_respuesta(preguntaSocio.Respuesta);
+    // Encriptar la respuesta
+    preguntaSocio.Respuesta = hashSync(preguntaSocio.Respuesta, 10);
 
     const query = "UPDATE preguntas_socios SET ? WHERE Socio_id = ?";
     const [result] = await con.query(query, [preguntaSocio, preguntaSocio.Socio_id]) as [OkPacket, any];
