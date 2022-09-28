@@ -4,7 +4,7 @@ import db from "../config/database";
 import { campos_incompletos, catch_common_error, existe_socio, Fecha_actual, validar_password } from "../utils/validaciones";
 import * as jwt from "jsonwebtoken";
 import { OkPacket, RowDataPacket } from "mysql2";
-import { getCommonError, validarCurp } from "../utils/utils";
+import { getCommonError, validarCurp, validarFecha } from "../utils/utils";
 import { AdminRequest, CustomJwtPayload, SocioRequest } from "../types/misc";
 import { existeGrupo } from "../services/Grupos.services";
 import { PoolConnection } from "mysql2/promise";
@@ -51,7 +51,7 @@ export const register = async (req, res, next) => {
         const [rows] = await db.query(query, [campos_usuario.Username]) as [RowDataPacket[], any];
 
         if (rows.length > 0) {
-            throw { code: 400, message: 'El usuario ya existe' };
+            throw { code: 400, message: `El nombre de usuario ${campos_usuario.Username} ya existe` };
         }
 
         //comprobar que el curp sea valido
@@ -59,8 +59,12 @@ export const register = async (req, res, next) => {
             throw { code: 400, message: 'El curp no es valido' };
         }
 
+        if(!validarFecha(campos_usuario.Fecha_nac)){
+            throw { code: 400, message: 'La fecha de nacimiento no es valida, debe ser aaaa-mm-dd' };
+        }
+
         //comprobar que el curp sea unico
-        query = "SELECT * FROM socios WHERE CURP = ?";
+        query = "SELECT * FROM socios WHERE CURP like ?";
         const [curpsIguales] = await db.query(query, [campos_usuario.CURP]) as [RowDataPacket[], any];
 
         if (curpsIguales.length > 0) {
@@ -146,7 +150,7 @@ export const login = async (req, res) => {
                 } as CustomJwtPayload, secret);
 
                 //mandando token por el header
-                return res.status(200).json({ code: 200, message: 'Usuario autenticado', token, data: { Socio_id: result[0].Socio_id, Username: result[0].Username } });
+                return res.status(200).json({ code: 200, message: 'Usuario autenticado', token, data: { Socio_id: result[0].Socio_id, Username: result[0].Username, Nombres: result[0].Nombres } });
             }
             else {
                 return res.status(401).json({ code: 400, message: 'Contraseña incorrecta' });
