@@ -1,5 +1,6 @@
 import db from "../config/database";
 import { catch_common_error, existe_socio, obtener_sesion_activa, socio_en_grupo } from "../utils/validaciones";
+import { obtenerAcuerdoActual } from "./Acuerdos.services";
 
 /**
  * Obtiene la sesion activa de un grupo si es que hay una.
@@ -104,4 +105,29 @@ export const existeSesion = async (Sesion_id: number) => {
     }
 
     throw { code: 400, message: "No existe una sesion con el id " + Sesion_id };
+}
+
+export const disminuir_sesiones = async (Grupo_id: number) => {
+    if (!Grupo_id) {
+        throw { code: 400, message: "Datos incompletos"};
+    }
+    const query = "UPDATE prestamos INNER JOIN sesiones ON prestamos.Sesion_id = sesiones.Sesion_id SET prestamos.Sesiones_restantes = (prestamos.Sesiones_restantes - 1 ) WHERE sesiones.Grupo_id = ?;";
+    await db.query(query, [Grupo_id]);
+}
+
+export const actualizar_intereses = async (Grupo_id: number) => {
+    if (!Grupo_id) {
+        throw { code: 400, message: "Datos incompletos"};
+    }
+    //Conseguir las variables de los acuerdos actuales
+    const { Tasa_interes, Interes_morosidad, Interes_ampliacion } = await obtenerAcuerdoActual(Grupo_id);
+    //intereses normales --- Tasa_interes --- %
+    const query = "UPDATE prestamos INNER JOIN sesiones ON prestamos.Sesion_id = sesiones.Sesion_id SET prestamos.Interes_generado = ? WHERE sesiones.Grupo_id = ? AND prestamos.Estatus_prestamo = 0 AND Estatus_ampliacion = 0 AND Prestamo_original_id = null;";
+    await db.query(query, [Tasa_interes, Grupo_id]);
+    //intereses morosidad --- Interes_morosidad --- %
+    const query2 = "UPDATE prestamos INNER JOIN sesiones ON prestamos.Sesion_id = sesiones.Sesion_id SET prestamos.Interes_generado = ? WHERE sesiones.Grupo_id = ? AND prestamos.Estatus_prestamo = 0 AND Estatus_ampliacion = 0 AND Prestamo_original_id = null;";
+    await db.query(query2, [Interes_morosidad, Grupo_id]);
+    //intereses ampliacion --- Interes_ampliacion --- %
+    const query3 = "UPDATE prestamos INNER JOIN sesiones ON prestamos.Sesion_id = sesiones.Sesion_id SET prestamos.Interes_generado = ? WHERE sesiones.Grupo_id = ? AND prestamos.Estatus_prestamo = 0 AND Estatus_ampliacion = 0 AND Prestamo_original_id = null;";
+    await db.query(query3, [Interes_ampliacion, Grupo_id]);
 }
