@@ -92,7 +92,7 @@ export const crear_acuerdos = async (req: AdminRequest<Acuerdo>, res) => { //
             // Hacer commit en la bd
             await con.commit();
 
-            return res.status(201).json({ code: 201, message: "Acuerdo registrado correctamente" });
+            return res.status(200).json({ code: 200, message: "Acuerdo registrado correctamente" });
         } catch (error) {
             await con.rollback();
             throw error;
@@ -128,7 +128,7 @@ export const crear_acuerdo_secundario = async (req: AdminRequest<AcuerdoSecundar
         let query = "INSERT INTO acuerdos_secundarios SET ?";
         await db.query(query, [campos_acuerdo_secundario]);
 
-        return res.status(201).json({ code: 201, message: "Acuerdo secundario registrado correctamente" });
+        return res.status(200).json({ code: 200, message: "Acuerdo secundario registrado correctamente" });
     } catch (error) {
         const { code, message } = getCommonError(error);
         return res.status(code).json({ code, message });

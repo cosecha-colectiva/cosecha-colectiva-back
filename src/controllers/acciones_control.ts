@@ -46,7 +46,7 @@ export const registrar_compra_acciones = async (req: AdminRequest<{ Cantidad: nu
         comprar_acciones(Socio_id, Grupo_id, Cantidad, con);
 
         con.commit();
-        return res.status(201).json({ code: 201, message: "Acciones compradas" });
+        return res.status(200).json({ code: 200, message: "Acciones compradas" });
     } catch (error) {
         con.rollback();
         const { code, message } = getCommonError(error);
@@ -108,7 +108,7 @@ export const retiro_acciones = async (req: AdminRequest<{ Cantidad: number }>, r
         }, con);
 
         con.commit();
-        return res.status(201).json({ code: 201, message: "Acciones retiradas" });
+        return res.status(200).json({ code: 200, message: "Acciones retiradas" });
     } catch (error) {
         con.rollback();
         const { code, message } = getCommonError(error);
