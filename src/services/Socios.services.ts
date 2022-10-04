@@ -51,12 +51,6 @@ export async function agregarSocioGrupo(Socio_id: number, Codigo_grupo: string) 
         throw "El socio ya está en el grupo";
     }
 
-    // Si el socio no está inactivo, activarlo
-    if (grupo_socio.length > 0 && grupo_socio[0].Status == 0) {
-        query = "UPDATE grupo_socio SET Status = 1 WHERE Socio_id = ? AND Codigo_grupo = ?";
-        return await db.query(query, [Socio_id, Codigo_grupo]);
-    }
-
     // agregar el socio al grupo
     const campos_grupo_socio: GrupoSocio = {
         Tipo_socio: await grupoVacio(grupo.Grupo_id!) ? "ADMIN" : "SOCIO",
