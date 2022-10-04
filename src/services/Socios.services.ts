@@ -27,7 +27,7 @@ export const socio_es_admin = async (Socio_id: number, Grupo_id: number) => {
 
     // Si el socio no es administrador del grupo, lanzar error
     if (rows.length === 0) {
-        throw "El socio no es administrador del grupo";
+        throw {code: 403, message: "El socio no es administrador del grupo"};
     }
 
     return true;
