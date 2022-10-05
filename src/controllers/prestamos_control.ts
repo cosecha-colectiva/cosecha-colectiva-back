@@ -79,9 +79,7 @@ export const crear_prestamo = async (req: AdminRequest<PayloadCrearPrestamos>, r
             //Para hacer las validaciones anteriores necesitamos los datos del socio
             let query = "SELECT * FROM grupo_socio WHERE Socio_id = ? and Grupo_id = ?";
             const [socio] = await db.query(query, [Socio_id, Grupo_id]) as [GrupoSocio[], any];
-            console.log("Este es el socio en prestamo: " + socio);
             let Lista_socios_validacion = await prestamos_multiples(Grupo_id, [socio]);
-            console.log(Lista_socios_validacion);
 
             if (!Lista_socios_validacion[0].puede_pedir) {
                 return res.status(400).json({ code: 400, message: "El socio " + Lista_socios_validacion[0].Nombres + " " + Lista_socios_validacion[0].message });
@@ -97,6 +95,7 @@ export const crear_prestamo = async (req: AdminRequest<PayloadCrearPrestamos>, r
                 return res.status(400).json({ code: 400, message: "No hay suficiente cantidad en la caja" });
             }
 
+            campos_prestamo.Prestamo_original_id = null;
             // Crear Registro en prestamos
             await generar_prestamo(Grupo_id, campos_prestamo, con);
             // return res.status(201).json({ code: 201, message: "Prestamo creado" });
@@ -110,8 +109,6 @@ export const crear_prestamo = async (req: AdminRequest<PayloadCrearPrestamos>, r
             //Verificar que el prestamo no haya sido ampliado anteriormente
             let query_pres_am = "SELECT * FROM prestamos WHERE Prestamo_original_id = ?  OR Prestamo_id = ? AND Estatus_ampliacion = 1"
             const [prestamo_amp] = await db.query(query_pres_am, [Prestamo_original_id, Prestamo_original_id]) as [Prestamo[], any];
-            console.log(prestamo_amp.length);
-            console.log(prestamo_amp);
 
             if (prestamo_amp.length !== 0) {
                 return res.status(400).json({ code: 400, message: "Este prestamo ya fue ampliado una vez" });
@@ -126,17 +123,16 @@ export const crear_prestamo = async (req: AdminRequest<PayloadCrearPrestamos>, r
                 return res.status(400).json({ code: 400, message: "La cantidad no cubre el faltante del prestamo original" });
             }
 
-            let limite = limite_credito(Socio_id, Grupo_id, null, null, null);
-            if (limite[0] === 0) {
-                return res.status(400).json({ code: 400, message: "La cantidad solicitada rebasa su limite de credito" });
-            }
-
             // let dinero_extra = Monto_prestamo - faltante; //Preguntar que si no hay un espacio en la pantalla para ver lo que en realidad se da en dinero fisico
             //Pagar el prestamo original
-            console.log({faltante});
-            
             await pagarPrestamo(Prestamo_original_id!, faltante, con);
-            //Establecer de cuanto es el prestamo de la ampliacion
+
+            //Asegurarse de que no rebase su limite de credito
+            let limite = limite_credito(Socio_id, Grupo_id, null, null, null);
+            if (limite[0] === 0) {
+                // return res.status(400).json({ code: 400, message: "La cantidad solicitada rebasa su limite de credito" });
+                throw "La cantidad solicitada rebasa su limite de credito";
+            }
 
             // Generar prestamo ampliado
             await generar_prestamo(Grupo_id, campos_prestamo, con);
