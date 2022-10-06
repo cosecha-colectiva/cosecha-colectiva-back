@@ -186,9 +186,9 @@ export const cambiar_password = async (req: SocioRequest<any>, res) => {
 
 //funcion para Recuperar Contraseña
 export const recuperar_password = async (req, res) => {
-    const { Username, CURP, Pregunta_id, Respuesta, Password } = req.body;
+    const { Username, Pregunta_id, Respuesta, Password } = req.body;
 
-    if (campos_incompletos({ Username, CURP, Pregunta_id, Respuesta, Password })) {
+    if (campos_incompletos({ Username, Pregunta_id, Respuesta, Password })) {
         return res.status(400).json({ code: 400, message: 'Campos incompletos' });
     }
 
@@ -208,6 +208,28 @@ export const recuperar_password = async (req, res) => {
         const { message, code } = getCommonError(error);
         return res.status(code).json({ code, message });
     }
+}
+
+// controlador para validar pregunta de seguridad
+export const validar_pregunta_seguridad = async (req: SocioRequest<any>, res) => {
+    const { Username, Pregunta_id, Respuesta } = req.body;
+
+    if (campos_incompletos({ Username, Pregunta_id, Respuesta })) {
+        return res.status(400).json({ code: 400, message: 'Campos incompletos' });
+    }
+
+    try {
+        //validar que existe el usuario
+        const socio = await existe_socio(Username);
+        //validar que la pregunta es correcta
+        await validarPregunta(socio.Socio_id!, Pregunta_id, Respuesta);
+
+        return res.status(200).json({ code: 200, message: 'Datos correctos' });
+    } catch (error) {
+        const { message, code } = getCommonError(error);
+        return res.status(code).json({ code, message });
+    }
+
 }
 
 // controlador para unirse a grupo
