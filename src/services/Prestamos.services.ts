@@ -131,7 +131,7 @@ export const pagarPrestamo = async (Prestamo_id: number, Monto_abono: number, co
     // Crear registro en Transaccion_prestamos
     let query = "INSERT INTO transaccion_prestamos (Prestamo_id, Transaccion_id, Monto_abono_prestamo, Monto_abono_interes) VALUES (?, ?, ?, ?)";
     await con.query(query, [Prestamo_id, transaccion.Transaccion_id, Monto_abono_prestamo, Monto_abono_interes]);
-
+    
     // Actualizar campos en el prestamo
     prestamo.Interes_pagado += Monto_abono_interes;
     prestamo.Monto_pagado += Monto_abono_prestamo;
@@ -148,3 +148,38 @@ export const pagarPrestamo = async (Prestamo_id: number, Monto_abono: number, co
     query = "Update sesiones SET Ganancias = Ganancias + ? WHERE Sesion_id = ?";
     const result = await con.query(query, [Monto_abono_interes, sesionActual.Sesion_id]) as [OkPacket, any];
 }
+
+/**
+ * Funcion para generar un prestamo.
+ * @param Grupo_id Id del grupo.
+ * @param campos_prestamo Campos necesarios para crear un prestamo.
+ * @throws Error si el prestamo no se pudo generar.
+ */
+ export const generar_prestamo = async (Grupo_id: number, campos_prestamo: Prestamo, con?: PoolConnection | Pool) => {
+    if (con === undefined) con = db;
+    let query = "INSERT INTO prestamos SET ?";
+    await con.query(query, campos_prestamo);
+    
+    // Registrar transaccion
+     await crear_transaccion({Cantidad_movimiento: -campos_prestamo.Monto_prestamo, Catalogo_id: "ENTREGA_PRESTAMO", Grupo_id, Socio_id: campos_prestamo.Socio_id}, con);
+}
+
+// export const limite_credito = async (Socio_id?: number, Grupo_id: number, con?: PoolConnection | Pool) => {
+//     let query2 = "SELECT * FROM prestamos JOIN sesiones ON prestamos.Sesion_id = sesiones.Sesion_id WHERE Socio_id = ? AND Grupo_id = ? AND Estatus_prestamo = 0;";
+//     const prestamos =  (await db.query(query2, [Socio_id, Grupo_id]))[0] as Prestamo[];
+//     let total_prestamos = 0;
+//     for (let i = 0; i < prestamos.length; i++) {
+//             prestamos.forEach((prestamo) => {
+//             total_prestamos = total_prestamos + prestamo.Monto_prestamo;
+//         })
+//         let puede_pedir = total_prestamos < (socio[0].Acciones * Limite_credito) ? 1 : 0;
+//         let Limite_credito_disponible = (socio[0].Acciones * Limite_credito) - total_prestamos;
+//         if (puede_pedir === 1) {
+//             //si puede pedir porque sus prestamos no superan su limite
+//             lista_socios_prestamo.push({ "Socio_id": socio[0].Socio_id, "Nombres": datos_personales[0].Nombres, "Apellidos": datos_personales[0].Apellidos, "puede_pedir": 1, "message": "", "Limite_credito_disponible": Limite_credito_disponible });
+//         } else {
+//             //agregar el porque no puede pedir un prestamo
+//             lista_socios_prestamo.push({ "Socio_id": socio[0].Socio_id, "Nombres": datos_personales[0].Nombres, "Apellidos": datos_personales[0].Apellidos, "puede_pedir": 0, "message": "Sus prestamos llegan a su limite de credito" });
+//         }
+//     }
+// }
