@@ -27,7 +27,7 @@ export const socio_es_admin = async (Socio_id: number, Grupo_id: number) => {
 
     // Si el socio no es administrador del grupo, lanzar error
     if (rows.length === 0) {
-        throw {code: 403, message: "El socio no es administrador del grupo"};
+        throw { code: 403, message: "El socio no es administrador del grupo" };
     }
 
     return true;
@@ -150,7 +150,11 @@ export const validarPregunta = async (Socio: Socio | number, Pregunta_id: number
 
     const query = "SELECT * FROM preguntas_socios WHERE Socio_id = ? AND Pregunta_id = ?";
     const [preguntas_socios] = await db.query(query, [Socio, Pregunta_id]) as [PreguntaSocio[], any];
-    const respuesta_es_correcta = compareSync(Respuesta, preguntas_socios[0]?.Respuesta);
+
+    let respuesta_es_correcta = false;
+    if (preguntas_socios.length !== 0) {
+        respuesta_es_correcta = compareSync(Respuesta, preguntas_socios[0]?.Respuesta);
+    }
 
     if (!respuesta_es_correcta) {
         throw "Pregunta y/o Respuesta incorrectas";
@@ -246,7 +250,7 @@ export const actualizaPreguntaSocio = async (preguntaSocio: PreguntaSocio, con?:
  * @returns Un objeto de tipo GrupoSocio
  * @throws Si los datos no son validos
  */
- export const obtenerGrupoSocio = async (Socio_id: number, Grupo_id: number) => {
+export const obtenerGrupoSocio = async (Socio_id: number, Grupo_id: number) => {
     const query = "SELECT * FROM grupo_socio WHERE Socio_id = ? AND Grupo_id = ?";
     const [result] = await db.query(query, [Socio_id, Grupo_id]) as [GrupoSocio[], any];
 

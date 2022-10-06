@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { register, login, unirse_grupo, recuperar_password, cambiar_password, cambiar_pregunta_seguridad, enviar_grupos_socio } from "../../controllers/socios_control";
+import { register, login, unirse_grupo, recuperar_password, cambiar_password, cambiar_pregunta_seguridad, enviar_grupos_socio, validar_pregunta_seguridad } from "../../controllers/socios_control";
 import { authSocio } from "../../middleware/auth";
 
 const router = Router({ mergeParams: true });
@@ -19,5 +19,7 @@ router.post("/grupos", authSocio, unirse_grupo);
 router.patch("/password", authSocio, cambiar_password);
 // Cambiar pregunta de seguridad
 router.patch("/pregunta", authSocio, cambiar_pregunta_seguridad);
+// Validar pregunta de seguridad
+router.post("/pregunta", authSocio, validar_pregunta_seguridad);
 
 export { router as sociosRoutes };
