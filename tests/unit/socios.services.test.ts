@@ -1,6 +1,7 @@
 import db from "../../src/config/database";
 import { socio_es_admin } from "../../src/services/Socios.services";
 import config from "../config";
+import { validarCurp } from "../../src/utils/utils";
 
 afterAll(async () => {
     await db.end();
@@ -35,4 +36,19 @@ describe("socio_es_admin", () => {
 
         return expect(socio_es_admin(Socio_id, Grupo_id)).rejects.not.toBeNull();
     });
-})
+});
+
+// Tests para curp valido
+describe.skip("curp valido", () => {
+    it("Debe retornar true si la curp es valids", async () => {
+        const curp = "ZADA010615HGTVRDA4";
+        const curpValido = validarCurp(curp);
+        expect(curpValido).toBe(true);
+    })
+
+    it("Debe retornar false si la curp no es valida", async () => {
+        const curp = " ZADA010615HGTVRDA4";
+        const curpValido = validarCurp(curp);
+        expect(curpValido).toBe(false);
+    })
+});

@@ -1,3 +1,4 @@
+import { Pool, PoolConnection } from "mysql2/promise";
 import db from "../config/database";
 import { catch_common_error, existe_socio, obtener_sesion_activa, socio_en_grupo } from "../utils/validaciones";
 
@@ -6,9 +7,11 @@ import { catch_common_error, existe_socio, obtener_sesion_activa, socio_en_grupo
  * @param Grupo_id Id del grupo que tiene la sesion
  * @returns Un objeto de tipo Sesion. TRHOWS COMMON ERROR
  */
-export const obtenerSesionActual = async (Grupo_id: number) => {
+export const obtenerSesionActual = async (Grupo_id: number, con?: PoolConnection | Pool) => {
+    if (con === undefined) con = db;
+
     let query = "SELECT * FROM sesiones WHERE sesiones.Activa = TRUE AND sesiones.Grupo_id = ? ORDER BY sesiones.Sesion_id DESC LIMIT 1";
-    const sesion = (await db.query(query, Grupo_id))[0][0] as Sesion;
+    const sesion = (await con.query(query, Grupo_id))[0][0] as Sesion;
 
     if (sesion !== undefined) {
         return sesion;
@@ -85,3 +88,23 @@ export const registrar_asistencias = async (Grupo_id, Socios) => {
     }
 }
 
+
+
+/**
+ * Verifica si existe una sesion
+ * @param Sesion_id Id de la sesion a verificar.
+ * @returns Objeto de tipo Sesion.
+ * @throws Si no existe una sesion con el id dado.
+ */
+export const existeSesion = async (Sesion_id: number) => {
+    const sesion = (await db.query(
+        "Select * From sesiones where Sesion_id = ?",
+        Sesion_id
+    ))[0][0] as Sesion;
+
+    if (sesion !== undefined) {
+        return sesion;
+    }
+
+    throw { code: 400, message: "No existe una sesion con el id " + Sesion_id };
+}
