@@ -119,15 +119,17 @@ export const actualizar_intereses = async (Grupo_id: number) => {
     if (!Grupo_id) {
         throw { code: 400, message: "Datos incompletos"};
     }
-    //Conseguir las variables de los acuerdos actuales
-    const { Tasa_interes, Interes_morosidad, Interes_ampliacion } = await obtenerAcuerdoActual(Grupo_id);
+    
     //intereses normales --- Tasa_interes --- %
-    const query = "UPDATE prestamos INNER JOIN sesiones ON prestamos.Sesion_id = sesiones.Sesion_id SET prestamos.Interes_generado = ? WHERE sesiones.Grupo_id = ? AND prestamos.Estatus_prestamo = 0 AND Estatus_ampliacion = 0 AND Prestamo_original_id = null;";
-    await db.query(query, [Tasa_interes, Grupo_id]);
+    const query = "UPDATE prestamos INNER JOIN sesiones ON prestamos.Sesion_id = sesiones.Sesion_id INNER JOIN socios ON prestamos.Socio_id = socios.Socio_id INNER JOIN acuerdos ON prestamos.Acuerdos_id = Acuerdos.Acuerdo_id SET prestamos.Interes_generado = prestamos.Interes_generado + ((prestamos.Monto_prestamo*acuerdos.Tasa_interes)/100) WHERE sesiones.Grupo_id = ? AND prestamos.Estatus_prestamo = 0 AND prestamos.Estatus_ampliacion = 0 AND prestamos.Sesiones_restantes >= 0 AND prestamos.Prestamo_original_id IS NULL AND socios.`Status` = 1;";
+    await db.query(query, [Grupo_id]);
     //intereses morosidad --- Interes_morosidad --- %
-    const query2 = "UPDATE prestamos INNER JOIN sesiones ON prestamos.Sesion_id = sesiones.Sesion_id SET prestamos.Interes_generado = ? WHERE sesiones.Grupo_id = ? AND prestamos.Estatus_prestamo = 0 AND Estatus_ampliacion = 0 AND Prestamo_original_id = null;";
-    await db.query(query2, [Interes_morosidad, Grupo_id]);
+    const query2 = "UPDATE prestamos INNER JOIN sesiones ON prestamos.Sesion_id = sesiones.Sesion_id INNER JOIN socios ON prestamos.Socio_id = socios.Socio_id INNER JOIN acuerdos ON prestamos.Acuerdos_id = Acuerdos.Acuerdo_id SET prestamos.Interes_generado = prestamos.Interes_generado + ((prestamos.Monto_prestamo*acuerdos.Interes_morosidad)/100) WHERE sesiones.Grupo_id = ? AND prestamos.Estatus_prestamo = 0 AND prestamos.Estatus_ampliacion = 0 AND prestamos.Sesiones_restantes < 0 AND prestamos.Prestamo_original_id IS NULL AND socios.`Status` = 1;";
+    await db.query(query2, [Grupo_id]);
     //intereses ampliacion --- Interes_ampliacion --- %
-    const query3 = "UPDATE prestamos INNER JOIN sesiones ON prestamos.Sesion_id = sesiones.Sesion_id SET prestamos.Interes_generado = ? WHERE sesiones.Grupo_id = ? AND prestamos.Estatus_prestamo = 0 AND Estatus_ampliacion = 0 AND Prestamo_original_id = null;";
-    await db.query(query3, [Interes_ampliacion, Grupo_id]);
+    const query3 = "UPDATE prestamos INNER JOIN sesiones ON prestamos.Sesion_id = sesiones.Sesion_id INNER JOIN socios ON prestamos.Socio_id = socios.Socio_id INNER JOIN acuerdos ON prestamos.Acuerdos_id = Acuerdos.Acuerdo_id SET prestamos.Interes_generado = prestamos.Interes_generado + ((prestamos.Monto_prestamo*acuerdos.Interes_ampliacion)/100) WHERE sesiones.Grupo_id = ? AND prestamos.Estatus_prestamo = 0 AND prestamos.Estatus_ampliacion = 1 AND prestamos.Sesiones_restantes >= 0 AND prestamos.Prestamo_original_id IS NOT NULL AND socios.`Status` = 1;";
+    await db.query(query3, [Grupo_id]);
+    //intereses ampliacion con morosidad --- Interes_ampliacion + Interes_morosidad--- %
+    const query4 = "UPDATE prestamos INNER JOIN sesiones ON prestamos.Sesion_id = sesiones.Sesion_id INNER JOIN socios ON prestamos.Socio_id = socios.Socio_id INNER JOIN acuerdos ON prestamos.Acuerdos_id = Acuerdos.Acuerdo_id SET prestamos.Interes_generado = prestamos.Interes_generado + ((prestamos.Monto_prestamo*(acuerdos.Interes_ampliacion+acuerdos.Interes_morosidad))/100) WHERE sesiones.Grupo_id = ? AND prestamos.Estatus_prestamo = 0 AND prestamos.Estatus_ampliacion = 1 AND prestamos.Sesiones_restantes < 0 AND prestamos.Prestamo_original_id IS NOT NULL AND socios.`Status` = 1;";
+    await db.query(query4, [Grupo_id]);
 }
