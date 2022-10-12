@@ -167,3 +167,17 @@ export const finalizar_sesion = async (req: AdminRequest<any>, res) => {
         con.release();
     }
 }
+
+
+export const agendar_sesion = async (req, res) => {
+    const Grupo_id = req.id_grupo_actual;
+    const Lugar = req.body.lugar;
+    const FechaHora = req.body.fechaHora;
+
+    if (Grupo_id && Lugar && FechaHora) {
+        return res.json({ code: 400, message: 'campos incompletos' }).status(400);
+    }
+    let sesion = await obtenerSesionActual(Grupo_id);
+    let query = "UPDATE sesiones SET Fecha_prox_reunion = ?, Lugar_prox_reunion = ? WHERE Sesion_id = ?";
+    await db.query(query, [FechaHora, Lugar, sesion.Sesion_id]);
+}
