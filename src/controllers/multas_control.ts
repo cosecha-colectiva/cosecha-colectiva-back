@@ -62,7 +62,7 @@ export const crear_multa = async (req: AdminRequest<Multa>, res) => {
         const query = "INSERT INTO multas SET ?";
         await db.query(query, campos_multa);
 
-        return res.status(201).json({ code: 201, message: 'Multa creada' });
+        return res.status(200).json({ code: 200, message: 'Multa creada' });
     } catch (error) {
         console.log(error);
         const { message, code } = getCommonError(error)

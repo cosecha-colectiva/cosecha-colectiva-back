@@ -1,3 +1,4 @@
+import { Pool, PoolConnection } from "mysql2/promise";
 import db from "../config/database";
 import { catch_common_error, existe_socio, obtener_sesion_activa, socio_en_grupo } from "../utils/validaciones";
 import { obtenerAcuerdoActual } from "./Acuerdos.services";
@@ -7,9 +8,11 @@ import { obtenerAcuerdoActual } from "./Acuerdos.services";
  * @param Grupo_id Id del grupo que tiene la sesion
  * @returns Un objeto de tipo Sesion. TRHOWS COMMON ERROR
  */
-export const obtenerSesionActual = async (Grupo_id: number) => {
+export const obtenerSesionActual = async (Grupo_id: number, con?: PoolConnection | Pool) => {
+    if (con === undefined) con = db;
+
     let query = "SELECT * FROM sesiones WHERE sesiones.Activa = TRUE AND sesiones.Grupo_id = ? ORDER BY sesiones.Sesion_id DESC LIMIT 1";
-    const sesion = (await db.query(query, Grupo_id))[0][0] as Sesion;
+    const sesion = (await con.query(query, Grupo_id))[0][0] as Sesion;
 
     if (sesion !== undefined) {
         return sesion;

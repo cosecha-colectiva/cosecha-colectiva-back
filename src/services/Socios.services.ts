@@ -27,7 +27,7 @@ export const socio_es_admin = async (Socio_id: number, Grupo_id: number) => {
 
     // Si el socio no es administrador del grupo, lanzar error
     if (rows.length === 0) {
-        throw "El socio no es administrador del grupo";
+        throw { code: 403, message: "El socio no es administrador del grupo" };
     }
 
     return true;
@@ -49,12 +49,6 @@ export async function agregarSocioGrupo(Socio_id: number, Codigo_grupo: string) 
     // Si el socio está activo o congelado en el grupo
     if (grupo_socio.length > 0 && grupo_socio[0].Status != 0) {
         throw "El socio ya está en el grupo";
-    }
-
-    // Si el socio no está inactivo, activarlo
-    if (grupo_socio.length > 0 && grupo_socio[0].Status == 0) {
-        query = "UPDATE grupo_socio SET Status = 1 WHERE Socio_id = ? AND Codigo_grupo = ?";
-        return await db.query(query, [Socio_id, Codigo_grupo]);
     }
 
     // agregar el socio al grupo
@@ -156,7 +150,11 @@ export const validarPregunta = async (Socio: Socio | number, Pregunta_id: number
 
     const query = "SELECT * FROM preguntas_socios WHERE Socio_id = ? AND Pregunta_id = ?";
     const [preguntas_socios] = await db.query(query, [Socio, Pregunta_id]) as [PreguntaSocio[], any];
-    const respuesta_es_correcta = compareSync(Respuesta, preguntas_socios[0]?.Respuesta);
+
+    let respuesta_es_correcta = false;
+    if (preguntas_socios.length !== 0) {
+        respuesta_es_correcta = compareSync(Respuesta, preguntas_socios[0]?.Respuesta);
+    }
 
     if (!respuesta_es_correcta) {
         throw "Pregunta y/o Respuesta incorrectas";
@@ -212,6 +210,8 @@ export const crearPreguntaSocio = async (preguntaSocio: PreguntaSocio, con?: Con
 
     // aplanar la respuesta
     preguntaSocio.Respuesta = aplanar_respuesta(preguntaSocio.Respuesta);
+    // encriptar la respuesta
+    preguntaSocio.Respuesta = hashSync(preguntaSocio.Respuesta, 10);
 
     const query = "INSERT INTO preguntas_socios SET ?";
     const [result] = await con.query(query, [preguntaSocio]) as [OkPacket, any];
@@ -234,11 +234,31 @@ export const actualizaPreguntaSocio = async (preguntaSocio: PreguntaSocio, con?:
 
     // Aplanar la respuesta
     preguntaSocio.Respuesta = aplanar_respuesta(preguntaSocio.Respuesta);
+    // Encriptar la respuesta
+    preguntaSocio.Respuesta = hashSync(preguntaSocio.Respuesta, 10);
 
     const query = "UPDATE preguntas_socios SET ? WHERE Socio_id = ?";
     const [result] = await con.query(query, [preguntaSocio, preguntaSocio.Socio_id]) as [OkPacket, any];
 
     return result;
+}
+
+/**
+ * Funcion para obtener objeto una relacion grupo-socio
+ * @param Socio_id El id del socio
+ * @param Grupo_id El id del grupo
+ * @returns Un objeto de tipo GrupoSocio
+ * @throws Si los datos no son validos
+ */
+export const obtenerGrupoSocio = async (Socio_id: number, Grupo_id: number) => {
+    const query = "SELECT * FROM grupo_socio WHERE Socio_id = ? AND Grupo_id = ?";
+    const [result] = await db.query(query, [Socio_id, Grupo_id]) as [GrupoSocio[], any];
+
+    if (result.length === 0) {
+        throw "El socio no pertenece al grupo";
+    }
+
+    return result[0] as GrupoSocio;
 }
 
 /**

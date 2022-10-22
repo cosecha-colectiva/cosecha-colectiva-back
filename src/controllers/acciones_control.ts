@@ -1,5 +1,6 @@
 import { Response } from "express";
 import db from "../config/database";
+import { comprar_acciones, obtener_costo_accion } from "../services/Acciones.services";
 import { obtenerAcuerdoActual } from "../services/Acuerdos.services";
 import { existeGrupo } from "../services/Grupos.services";
 import { obtenerSesionActual } from "../services/Sesiones.services";
@@ -19,6 +20,8 @@ export const registrar_compra_acciones = async (req: AdminRequest<{ Cantidad: nu
 
     let con = await db.getConnection();
     try {
+        con.beginTransaction();
+
         // Validar que el socio exista
         const socio = await existeSocio(Socio_id);
         // Validar que el grupo exista
@@ -33,27 +36,17 @@ export const registrar_compra_acciones = async (req: AdminRequest<{ Cantidad: nu
             return res.status(400).json({ error: "El socio no puede tener mas del 50% de las acciones del grupo" });
         }
 
-        // Agregar la accion a la relacion socio-grupo
-        let query = "UPDATE grupo_socio SET acciones = acciones + ? WHERE Socio_id = ? AND Grupo_id = ?";
-        await con.query(query, [Cantidad, Socio_id, Grupo_id]);
+        // Verificar que la cantidad sea divisible por el costo de una accion
+        const costo_accion = await obtener_costo_accion(Grupo_id);
+        if (Cantidad % costo_accion !== 0) {
+            throw `La cantidad de acciones no es divisible por el costo de una accion(${costo_accion})`;
+        }
 
-        // Actualizar la cantidad de acciones del grupo en la sesion
-        query = `UPDATE sesiones
-        SET Acciones = Acciones + ?
-        WHERE Grupo_id = ?
-        AND Activa = 1`;
-        await con.query(query, [Cantidad, Grupo_id]);
-
-        // Registrar la transaccion
-        await crear_transaccion({
-            Cantidad_movimiento: Cantidad,
-            Catalogo_id: "COMPRA_ACCION",
-            Socio_id,
-            Grupo_id,
-        }, con);
+        // Comprar acciones
+        comprar_acciones(Socio_id, Grupo_id, Cantidad, con);
 
         con.commit();
-        return res.status(201).json({ code: 201, message: "Acciones compradas" });
+        return res.status(200).json({ code: 200, message: "Acciones compradas" });
     } catch (error) {
         con.rollback();
         const { code, message } = getCommonError(error);
@@ -74,6 +67,8 @@ export const retiro_acciones = async (req: AdminRequest<{ Cantidad: number }>, r
 
     let con = await db.getConnection();
     try {
+        con.beginTransaction();
+
         // Validar que el socio exista
         const socio = await existeSocio(Socio_id);
 
@@ -113,7 +108,7 @@ export const retiro_acciones = async (req: AdminRequest<{ Cantidad: number }>, r
         }, con);
 
         con.commit();
-        return res.status(201).json({ code: 201, message: "Acciones retiradas" });
+        return res.status(200).json({ code: 200, message: "Acciones retiradas" });
     } catch (error) {
         con.rollback();
         const { code, message } = getCommonError(error);
@@ -128,7 +123,7 @@ export const enviar_costo_acciones = async (req: AdminRequest<any>, res: Respons
 
     try {
         const acuerdoActual = await obtenerAcuerdoActual(Grupo_id);
-        return res.status(200).json({ code: 200, message: "Costo de acciones", data: {Costo: acuerdoActual.Costo_acciones} });
+        return res.status(200).json({ code: 200, message: "Costo de acciones", data: { Costo: acuerdoActual.Costo_acciones } });
     } catch (error) {
         const { code, message } = getCommonError(error);
         return res.status(code).json({ code, message });        

@@ -4,3 +4,4 @@ node_modules
 prueba.js
 prueba.py
 dist
+*.pem

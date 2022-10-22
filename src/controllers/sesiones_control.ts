@@ -1,5 +1,5 @@
 import db from "../config/database";
-import { Fecha_actual, campos_incompletos, existe_grupo, catch_common_error, obtener_sesion_activa, existe_socio, socio_en_grupo } from "../utils/validaciones";
+import { Fecha_actual, campos_incompletos, catch_common_error, obtener_sesion_activa, existe_socio, socio_en_grupo } from "../utils/validaciones";
 import { actualizar_intereses, disminuir_sesiones, obtenerSesionActual, registrar_asistencias } from "../services/Sesiones.services";
 import { AdminRequest } from "../types/misc";
 import { getCommonError } from "../utils/utils";
