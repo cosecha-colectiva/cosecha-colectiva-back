@@ -10,7 +10,6 @@ import { existeGrupo } from "../services/Grupos.services";
 import { PoolConnection } from "mysql2/promise";
 import { actualizaPassword, actualizaPreguntaSocio, crearPreguntaSocio, existeCurp, existeSocio, existeUsername, grupos_del_socio, obtenerGrupoSocio, socioEnGrupo, validarPregunta } from "../services/Socios.services";
 import { obtenerAcuerdoActual } from "../services/Acuerdos.services";
-import { crear_transaccion } from "../services/Transacciones.services";
 import { comprar_acciones } from "../services/Acciones.services";
 import { Response } from "express";
 
@@ -388,13 +387,7 @@ export const modificar_socio = async (req: SocioRequest<any>, res: Response) => 
     const campos = ["Nombres", "Apellidos", "CURP", "Fecha_nac", "Nacionalidad", "Sexo", "Escolaridad", "Ocupacion", "Estado_civil", "Hijos", "Telefono", "Email", "Localidad", "Municipio", "Estado", "CP", "Pais", "Foto_perfil", "Username"];
 
     // Extraer los campos existentes del req.body
-    let campos_socio: any = {};
-    // for (let campo of campos) {
-    //     if(req.body[campo]) {
-    //         campos_socio[campo] = req.body[campo];
-    //     }
-    // }
-    
+    let campos_socio: any = {};    
     for (let campo in req.body){
         if(campos.includes(campo)) {
             campos_socio[campo] = req.body[campo];
